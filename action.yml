@@ -1,0 +1,21 @@
+name: 'Heroku Review App Action'
+description: 'Creates a new Heroku review app when invoked'
+inputs:
+  heroku_email:
+    description: 'The email address for the Heroku user that generated the personal access token'
+    required: true
+  heroku_api_key:
+    description: 'The personal access token to use to access the Heroku API'
+    required: true
+  pipeline_name:
+    description: "The name of the Heroku pipeline where the app should be deployed"
+    required: true
+  github_token:
+    description: 'GITHUB_TOKEN or a repo scoped PAT.'
+    default: ${{ github.token }}
+outputs:
+  comment:
+    description: "A comment which can be posted to the pull request after the action finishes."
+runs:
+  using: 'node16'
+  main: 'index.js'
