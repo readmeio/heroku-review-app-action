@@ -49,8 +49,8 @@ module.exports.postCreateComment = async function (appName, appUrl) {
   const comment = formatComment({
     image: owlberts.create,
     imageLink: appUrl,
-    headline: 'A review app has been launched for this PR!',
-    body: `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`,
+    headline: 'A PR app has been created for this branch!',
+    body: `🔍 [Inspect the Heroku app](${dashboardUrl}), or 🧭 [**take it for a spin**](${appUrl})!`,
   });
   return postComment(comment);
 };
@@ -60,8 +60,8 @@ module.exports.postUpdateComment = async function (appName, appUrl) {
   const comment = formatComment({
     image: owlberts.update,
     imageLink: appUrl,
-    headline: 'This PR‘s review app has been redeployed!',
-    body: `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`,
+    headline: 'This PR app has been redeployed!',
+    body: `🔍 [Inspect the Heroku app](${dashboardUrl}), or 🧭 [**take it for a spin**](${appUrl})!`,
   });
   return postComment(comment);
 };
@@ -69,7 +69,7 @@ module.exports.postUpdateComment = async function (appName, appUrl) {
 module.exports.postDeleteComment = async function () {
   const comment = formatComment({
     image: owlberts.delete,
-    headline: 'This PR’s review app has been shut down.',
+    headline: 'This PR app has been shut down.',
     body: `:sponge: Since this PR is closed, its review app has been cleaned up.`,
   });
   return postComment(comment);
