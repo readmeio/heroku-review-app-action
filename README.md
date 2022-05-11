@@ -43,6 +43,10 @@ If you work at ReadMe: In order to use this as a GitHub Action this repo must be
 
 If you don't: While this might be a handy template for other Heroku customers, it's written specific to ReadMe's needs.
 
+### Must perform a full clone to use this action
+
+By default `actions/checkout` does a [shallow clone](https://github.blog/2020-12-21-get-up-to-speed-with-partial-clone-and-shallow-clone/#user-content-shallow-clones) which doesn't include all of the repo history. But in order to push the repo contents to Heroku, we need a deep clone of all history. Setting `fetch-depth: 0` in the `actions/checkout` loads all history for all branches and tags, so be sure that's included as a parameter to `actions/checkout`.
+
 
 ## Development
 
