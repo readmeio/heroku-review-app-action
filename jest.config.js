@@ -1,5 +1,3 @@
-require('module-alias/register');
-
 module.exports = {
   testEnvironment: 'node',
   testRegex: '(/test/.*|(\\.|/)(test|spec))\\.(js?|ts?)$',

@@ -1,6 +1,6 @@
-const comments = require('@src/comments');
+const comments = require('../comments');
 const core = require('@actions/core');
-const heroku = require('@src/heroku');
+const heroku = require('../heroku');
 
 async function deleteController(params) {
   const { pipelineName, appName } = params;

@@ -2,7 +2,7 @@ module.exports = {
   extends: ['@readme/eslint-config'],
   plugins: ['node', 'import'],
   root: true,
-  ignorePatterns: [],
+  ignorePatterns: ['node_modules', 'dist'],
   rules: {
     'import/extensions': [
       'error',
@@ -25,12 +25,6 @@ module.exports = {
   },
   settings: {
     'require-await': 'error',
-    'import/resolver': {
-      alias: {
-        map: [['@src', './src']],
-        extensions: ['.js'],
-      },
-    },
   },
   env: {
     jest: true,

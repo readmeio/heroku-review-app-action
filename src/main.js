@@ -1,11 +1,11 @@
-const createController = require('@src/controllers/create');
-const deleteController = require('@src/controllers/delete');
+const createController = require('./controllers/create');
+const deleteController = require('./controllers/delete');
 const core = require('@actions/core');
-const git = require('@src/git');
+const git = require('./git');
 const github = require('@actions/github');
-const heroku = require('@src/heroku');
-const netrc = require('@src/netrc');
-const updateController = require('@src/controllers/update');
+const heroku = require('./heroku');
+const netrc = require('./netrc');
+const updateController = require('./controllers/update');
 
 /*
  * Loads common parameters used by all the controllers.

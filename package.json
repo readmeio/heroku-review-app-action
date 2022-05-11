@@ -4,6 +4,7 @@
   "description": "GitHub Action to create a new review app when invoked",
   "main": "index.js",
   "scripts": {
+    "build": "ncc build index.js",
     "lint": "npx eslint .",
     "test": "jest"
   },
@@ -25,11 +26,11 @@
   "dependencies": {
     "@actions/core": "^1.8.0",
     "@actions/github": "^5.0.1",
-    "module-alias": "^2.2.2",
     "node-fetch": "^2.6.7"
   },
   "devDependencies": {
     "@readme/eslint-config": "^8.7.3",
+    "@vercel/ncc": "^0.33.4",
     "eslint": "^8.14.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.26.0",

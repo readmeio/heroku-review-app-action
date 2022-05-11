@@ -33,5 +33,9 @@ jobs:
           command: npm run lint
 
       - run:
+          name: Building with ncc
+          command: npm run build
+
+      - run:
           name: Running unit tests
           command: npm test

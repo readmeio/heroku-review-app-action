@@ -1,8 +1,8 @@
-const comments = require('@src/comments');
+const comments = require('../comments');
 const core = require('@actions/core');
-const git = require('@src/git');
-const heroku = require('@src/heroku');
-const netrc = require('@src/netrc');
+const git = require('../git');
+const heroku = require('../heroku');
+const netrc = require('../netrc');
 
 async function updateController(params) {
   const { pipelineName, appName, refName } = params;

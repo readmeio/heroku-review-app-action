@@ -18,4 +18,4 @@ outputs:
     description: "A comment which can be posted to the pull request after the action finishes."
 runs:
   using: 'node16'
-  main: 'index.js'
+  main: 'dist/index.js'

@@ -43,24 +43,6 @@ If you work at ReadMe: In order to use this as a GitHub Action this repo must be
 
 If you don't: While this might be a handy template for other Heroku customers, it's written specific to ReadMe's needs.
 
-### node_modules
-
-The `node_modules` directory must be checked in to the repo in order to use this GitHub Action without a separate install step.
-
-Before committing changes to the `node_modules` directory, please prune dev dependencies from your local install. Example:
-
-```bash
-# Remove dev dependencies from your local node_modules directory
-$ npm prune --production
-
-# Commit your changes to package.json and node_modules
-$ git add node_modules  package.json package-lock.json
-$ git commit -m "chore: update node_modules"
-
-# Reinstall all modules, including dev dependencies
-$ npm install
-```
-
 
 ## Development
 
@@ -75,3 +57,4 @@ $ npm install
 
 * `npm run lint`
 * `npm test`
+* `npm build` (to rebuild `dist/index.js`, otherwise your changes won't be reflected in the copy that actually runs on GitHub!)
