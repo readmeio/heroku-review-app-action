@@ -1,0 +1,45 @@
+{
+  "name": "heroku-review-app-action",
+  "version": "1.0.0",
+  "description": "GitHub Action to create a new review app when invoked",
+  "main": "index.js",
+  "scripts": {
+    "build": "ncc build index.js",
+    "lint": "npx eslint .",
+    "test": "jest"
+  },
+  "engines": {
+    "node": "^16",
+    "npm": "^7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/readmeio/heroku-review-app-action.git"
+  },
+  "keywords": [],
+  "author": "Ryan Park",
+  "license": "Proprietary",
+  "bugs": {
+    "url": "https://github.com/readmeio/heroku-review-app-action/issues"
+  },
+  "homepage": "https://github.com/readmeio/heroku-review-app-action#readme",
+  "dependencies": {
+    "@actions/core": "^1.8.0",
+    "@actions/github": "^5.0.1",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "@readme/eslint-config": "^8.7.3",
+    "@vercel/ncc": "^0.33.4",
+    "eslint": "^8.14.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.26.0",
+    "jest": "^28.1.0",
+    "jest-extended": "^2.0.0",
+    "nock": "^13.2.4",
+    "prettier": "^2.6.2"
+  },
+  "_moduleAliases": {
+    "@src": "src"
+  }
+}
