@@ -17,7 +17,7 @@ async function createController(params) {
 
   const configVars = await heroku.getPipelineVars(pipelineId);
 
-  let stepCount = 4;
+  let stepCount = 5;
   if (Object.keys(configVars).length > 0) {
     stepCount += 1;
   }
@@ -45,6 +45,10 @@ async function createController(params) {
     core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
     await heroku.setAppVars(app.id, configVars);
   }
+
+  currentStep += 1;
+  core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
+  await heroku.addDrain(app.id, `https://logging.rdme.io/heroku/development/${appName}`);
 
   currentStep += 1;
   core.info(

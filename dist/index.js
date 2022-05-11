@@ -8704,7 +8704,7 @@ async function createController(params) {
 
   const configVars = await heroku.getPipelineVars(pipelineId);
 
-  let stepCount = 4;
+  let stepCount = 5;
   if (Object.keys(configVars).length > 0) {
     stepCount += 1;
   }
@@ -8732,6 +8732,10 @@ async function createController(params) {
     core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
     await heroku.setAppVars(app.id, configVars);
   }
+
+  currentStep += 1;
+  core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
+  await heroku.addDrain(app.id, `https://logging.rdme.io/heroku/development/${appName}`);
 
   currentStep += 1;
   core.info(
@@ -9084,6 +9088,18 @@ module.exports.setAppVars = async function (appId, vars) {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(vars),
+  });
+  return resp.json();
+};
+
+/*
+ * Adds a log drain to the given app
+ */
+module.exports.addDrain = async function (appId, url) {
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}/log-drains`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
   });
   return resp.json();
 };
