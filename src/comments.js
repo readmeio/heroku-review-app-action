@@ -47,7 +47,7 @@ module.exports.postCreateComment = async function (appName, appUrl) {
   const comment = formatComment({
     image: owlberts.create,
     imageLink: appUrl,
-    headline: 'This PR‘s review app has been redeployed!',
+    headline: 'This PR’s review app has been redeployed!',
     body: `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`,
   });
   return postComment(comment);
