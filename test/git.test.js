@@ -4,6 +4,8 @@ const git = require('../src/git');
 
 const SAMPLE_APP_NAME = 'dr-owlbert-pr-1234';
 const SAMPLE_REF = 'refs/heads/dev';
+const SAMPLE_EMAIL = 'jest-test-user@example.com';
+const SAMPLE_API_KEY = '12345678-1234-1234-1234-1234567890ab';
 
 describe('#src/git', () => {
   afterEach(() => {
@@ -48,13 +50,17 @@ describe('#src/git', () => {
     const EXPECTED_ARGS = [
       'push',
       '--force',
-      `https://git.heroku.com/${SAMPLE_APP_NAME}.git`,
+      `https://${encodeURIComponent(SAMPLE_EMAIL)}:${encodeURIComponent(
+        SAMPLE_API_KEY
+      )}@git.heroku.com/${SAMPLE_APP_NAME}.git`,
       `${SAMPLE_REF}:refs/heads/master`,
     ];
 
+    const SAMPLE_CREDENTIALS = { email: SAMPLE_EMAIL, apiKey: SAMPLE_API_KEY };
+
     it('should run "git push" with the correct arguments', () => {
       const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({ status: 0 });
-      expect(git.push(SAMPLE_APP_NAME, SAMPLE_REF)).toStrictEqual({ status: 0 });
+      expect(git.push(SAMPLE_CREDENTIALS, SAMPLE_APP_NAME, SAMPLE_REF)).toStrictEqual({ status: 0 });
       expect(spy.mock.lastCall[0]).toBe('git');
       expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
     });

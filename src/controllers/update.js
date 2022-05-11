@@ -2,7 +2,6 @@ const comments = require('../comments');
 const core = require('@actions/core');
 const git = require('../git');
 const heroku = require('../heroku');
-const netrc = require('../netrc');
 
 async function updateController(params) {
   const { pipelineName, appName, refName } = params;
@@ -23,9 +22,7 @@ async function updateController(params) {
   core.info(`Deploying to Heroku app "${appName}" -- this may take a few minutes...\n`);
 
   const credentials = heroku.getCredentials();
-  netrc.createNetrc(credentials);
-  const pushResult = git.push(appName, refName);
-  netrc.deleteNetrc();
+  const pushResult = git.push(credentials, appName, refName);
   if (pushResult.status !== 0) {
     throw new Error(`Ran into errors deploying the app "${appName}"`);
   }

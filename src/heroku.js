@@ -58,7 +58,7 @@ module.exports.initializeCredentials = function () {
 };
 
 /*
- * Returns the Heroku credentials which are needed for the .netrc file
+ * Returns the Heroku credentials, used for pushing code to Heroku
  */
 module.exports.getCredentials = function () {
   return { email: HEROKU_EMAIL, apiKey: HEROKU_API_KEY };

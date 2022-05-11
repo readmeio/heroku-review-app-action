@@ -4,7 +4,6 @@ const core = require('@actions/core');
 const git = require('./git');
 const github = require('@actions/github');
 const heroku = require('./heroku');
-const netrc = require('./netrc');
 const updateController = require('./controllers/update');
 
 /*
@@ -82,9 +81,6 @@ async function main() {
     }
   } catch (error) {
     core.setFailed(error.message);
-  } finally {
-    // extra cleanup just to make sure we don't leave a .netrc file
-    netrc.deleteNetrc();
   }
 }
 

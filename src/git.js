@@ -35,6 +35,9 @@ module.exports.refExists = ref => {
  * Returns the result of child_process.spawn(); for documentation see
  * https://nodejs.org/api/child_process.html.
  */
-module.exports.push = (appName, ref) => {
-  return git('push', ['--force', `https://git.heroku.com/${appName}.git`, `${ref}:refs/heads/master`]);
+module.exports.push = (credentials, appName, ref) => {
+  const url = new URL(`https://git.heroku.com/${appName}.git`);
+  url.username = credentials.email;
+  url.password = credentials.apiKey;
+  return git('push', ['--force', url.href, `${ref}:refs/heads/master`]);
 };

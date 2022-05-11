@@ -8689,7 +8689,6 @@ const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
-const netrc = __nccwpck_require__(8063);
 
 async function createController(params) {
   const { pipelineName, pipelineId, appName, refName } = params;
@@ -8734,9 +8733,7 @@ async function createController(params) {
     `[Step ${currentStep}/${stepCount}] Deploying the app to Heroku for the first time -- this may take a few minutes...\n`
   );
   const credentials = heroku.getCredentials();
-  netrc.createNetrc(credentials);
-  const pushResult = git.push(appName, refName);
-  netrc.deleteNetrc();
+  const pushResult = git.push(credentials, appName, refName);
   if (pushResult.status !== 0) {
     throw new Error(`Created Heroku app "${appName}" but ran into errors deploying for the first time.`);
   }
@@ -8806,7 +8803,6 @@ const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
-const netrc = __nccwpck_require__(8063);
 
 async function updateController(params) {
   const { pipelineName, appName, refName } = params;
@@ -8827,9 +8823,7 @@ async function updateController(params) {
   core.info(`Deploying to Heroku app "${appName}" -- this may take a few minutes...\n`);
 
   const credentials = heroku.getCredentials();
-  netrc.createNetrc(credentials);
-  const pushResult = git.push(appName, refName);
-  netrc.deleteNetrc();
+  const pushResult = git.push(credentials, appName, refName);
   if (pushResult.status !== 0) {
     throw new Error(`Ran into errors deploying the app "${appName}"`);
   }
@@ -8884,8 +8878,11 @@ module.exports.refExists = ref => {
  * Returns the result of child_process.spawn(); for documentation see
  * https://nodejs.org/api/child_process.html.
  */
-module.exports.push = (appName, ref) => {
-  return git('push', ['--force', `https://git.heroku.com/${appName}.git`, `${ref}:refs/heads/master`]);
+module.exports.push = (credentials, appName, ref) => {
+  const url = new URL(`https://git.heroku.com/${appName}.git`);
+  url.username = credentials.email;
+  url.password = credentials.apiKey;
+  return git('push', ['--force', url.href, `${ref}:refs/heads/master`]);
 };
 
 
@@ -8954,7 +8951,7 @@ module.exports.initializeCredentials = function () {
 };
 
 /*
- * Returns the Heroku credentials which are needed for the .netrc file
+ * Returns the Heroku credentials, used for pushing code to Heroku
  */
 module.exports.getCredentials = function () {
   return { email: HEROKU_EMAIL, apiKey: HEROKU_API_KEY };
@@ -9104,7 +9101,6 @@ const core = __nccwpck_require__(2186);
 const git = __nccwpck_require__(109);
 const github = __nccwpck_require__(5438);
 const heroku = __nccwpck_require__(7213);
-const netrc = __nccwpck_require__(8063);
 const updateController = __nccwpck_require__(2477);
 
 /*
@@ -9182,52 +9178,10 @@ async function main() {
     }
   } catch (error) {
     core.setFailed(error.message);
-  } finally {
-    // extra cleanup just to make sure we don't leave a .netrc file
-    netrc.deleteNetrc();
   }
 }
 
 module.exports = main;
-
-
-/***/ }),
-
-/***/ 8063:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const core = __nccwpck_require__(2186);
-const fs = __nccwpck_require__(7147);
-const path = __nccwpck_require__(1017);
-
-module.exports.getNetrcPath = function () {
-  return path.join(process.env.HOME, '.netrc');
-};
-
-module.exports.createNetrc = function (credentials) {
-  const filename = module.exports.getNetrcPath();
-  if (fs.existsSync(filename)) {
-    throw new Error(`Credentials file ${filename} already exists`); // NOCOMMIT?
-  }
-  fs.writeFileSync(
-    filename,
-    `machine git.heroku.com\n  login ${credentials.email}\n  password ${credentials.apiKey}\n`
-  );
-  if (process.env.NODE_ENV !== 'test') {
-    core.info(`Saved Heroku login credentials to ${filename}`);
-  }
-};
-
-module.exports.deleteNetrc = function () {
-  const filename = module.exports.getNetrcPath();
-  if (!fs.existsSync(filename)) {
-    return;
-  }
-  fs.unlinkSync(filename);
-  if (process.env.NODE_ENV !== 'test') {
-    core.info(`Deleted Heroku login credentials from ${filename}`);
-  }
-};
 
 
 /***/ }),
