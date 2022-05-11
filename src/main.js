@@ -39,9 +39,6 @@ async function getParams() {
   }
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
-  if (!git.refExists(refName)) {
-    throw new Error(`Ref "${refName}" does not exist.`);
-  }
 
   return { pipelineName, pipelineId, baseName, appName, refName };
 }

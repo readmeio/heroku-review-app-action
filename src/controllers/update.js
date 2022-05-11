@@ -6,9 +6,13 @@ const heroku = require('../heroku');
 async function updateController(params) {
   const { pipelineName, appName, refName } = params;
 
+  // Additional validation specific to the "update" action
   const exists = await heroku.appExists(appName);
   if (!exists) {
     throw new Error(`Unable to update PR app: there is no app named "${appName}" on Heroku`);
+  }
+  if (!git.refExists(refName)) {
+    throw new Error(`Ref "${refName}" does not exist.`);
   }
 
   let appUrl;
