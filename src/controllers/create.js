@@ -6,8 +6,13 @@ const heroku = require('../heroku');
 async function createController(params) {
   const { pipelineName, pipelineId, appName, refName } = params;
 
-  if (await heroku.appExists(appName)) {
+  // Additional validation specific to the "create" action
+  const exists = await heroku.appExists(appName);
+  if (exists) {
     throw new Error(`Unable to create new PR app: an app named "${appName}" app already exists on Heroku`);
+  }
+  if (!git.refExists(refName)) {
+    throw new Error(`Ref "${refName}" does not exist.`);
   }
 
   const configVars = await heroku.getPipelineVars(pipelineId);

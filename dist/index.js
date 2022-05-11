@@ -8693,8 +8693,13 @@ const heroku = __nccwpck_require__(7213);
 async function createController(params) {
   const { pipelineName, pipelineId, appName, refName } = params;
 
-  if (await heroku.appExists(appName)) {
+  // Additional validation specific to the "create" action
+  const exists = await heroku.appExists(appName);
+  if (exists) {
     throw new Error(`Unable to create new PR app: an app named "${appName}" app already exists on Heroku`);
+  }
+  if (!git.refExists(refName)) {
+    throw new Error(`Ref "${refName}" does not exist.`);
   }
 
   const configVars = await heroku.getPipelineVars(pipelineId);
@@ -8807,9 +8812,13 @@ const heroku = __nccwpck_require__(7213);
 async function updateController(params) {
   const { pipelineName, appName, refName } = params;
 
+  // Additional validation specific to the "update" action
   const exists = await heroku.appExists(appName);
   if (!exists) {
     throw new Error(`Unable to update PR app: there is no app named "${appName}" on Heroku`);
+  }
+  if (!git.refExists(refName)) {
+    throw new Error(`Ref "${refName}" does not exist.`);
   }
 
   let appUrl;
@@ -9136,9 +9145,6 @@ async function getParams() {
   }
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
-  if (!git.refExists(refName)) {
-    throw new Error(`Ref "${refName}" does not exist.`);
-  }
 
   return { pipelineName, pipelineId, baseName, appName, refName };
 }
