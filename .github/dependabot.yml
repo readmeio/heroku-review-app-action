@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 10
+    reviewers:
+      - ryangwu82
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps-dev)
+    ignore:
+      # node-fetch v3.x is an ECMAscript module which we can't currently use.
+      # v2 is still being supported indefinitely.
+      - dependency-name: node-fetch
+        versions:
+          - '>= 3'
