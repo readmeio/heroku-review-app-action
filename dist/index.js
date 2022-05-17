@@ -8627,24 +8627,22 @@ async function postComment(body) {
 }
 
 function formatComment(options) {
-  let result = '';
+  let img = '';
   if (options.image) {
     if (options.imageLink) {
-      result += `<a href="${options.imageLink}">`;
+      img += `<a href="${options.imageLink}">`;
     }
-    result += `<img align="right" height="100" src="${options.image}" />`;
+    img += `<img align="right" height="100" src="${options.image}" />`;
     if (options.imageLink) {
-      result += `</a>`;
+      img += `</a>`;
     }
   }
 
-  if (options.headline) {
-    result += `\n\n## ${options.headline}`;
-  }
-
+  let result = options.headline ? `## ${options.headline} ${img}` : img;
   if (options.body) {
     result += `\n\n${options.body}`;
   }
+
   return result;
 }
 
@@ -8664,7 +8662,7 @@ module.exports.postUpdateComment = async function (appName, appUrl) {
   const comment = formatComment({
     image: owlberts.update,
     imageLink: appUrl,
-    headline: 'This PR‘s review app has been redeployed!',
+    headline: 'This PR’s review app has been redeployed!',
     body: `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`,
   });
   return postComment(comment);
