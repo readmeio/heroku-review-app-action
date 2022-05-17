@@ -14,8 +14,7 @@ async function createController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
-  const sha = git.shaForRef(refName);
-  const message = git.messageForRef(refName).split('\n')[0];
+  const message = git.messageForRef(refName);
 
   const configVars = templateApp ? await heroku.getAppVars(templateApp) : await heroku.getPipelineVars(pipelineId);
 
@@ -70,7 +69,7 @@ async function createController(params) {
   }
 
   core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postCreateComment(appName, appUrl, sha, message);
+  await comments.postCreateComment(appName, appUrl, message);
   return true;
 }
 

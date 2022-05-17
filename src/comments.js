@@ -42,15 +42,18 @@ function formatComment(options) {
   return result;
 }
 
-function buildLinks(appName, appUrl, sha, message) {
+function buildLinks(appName, appUrl, message) {
   const links = [];
 
-  if (sha && message) {
-    const owner = github.context.payload.repository.owner.login;
-    const repo = github.context.payload.repository.name;
-    const prNumber = parseInt(github.context.payload.number, 10);
+  const owner = github.context.payload.repository.owner.login;
+  const repo = github.context.payload.repository.name;
+  const prNumber = parseInt(github.context.payload.number, 10);
+  const sha = github.context.sha;
+
+  if (owner && repo && prNumber && sha && message) {
     const commitLink = `https://github.com/${owner}/${repo}/pull/${prNumber}/commits/${sha}`;
-    links.push(`:rocket: **Deployed commit:** [\`${sha.substring(0, 8)}\` ${message}](${commitLink})`);
+    const commitText = `\`${sha.substring(0, 8)}\` ${message.split('\n')[0]}`;
+    links.push(`:rocket: **Deployed commit:** [${commitText}](${commitLink})`);
   }
 
   const dashboardUrl = `https://dashboard.heroku.com/apps/${appName}`;
@@ -61,22 +64,22 @@ function buildLinks(appName, appUrl, sha, message) {
   return links;
 }
 
-module.exports.postCreateComment = async function (appName, appUrl, sha, message) {
+module.exports.postCreateComment = async function (appName, appUrl, message) {
   const comment = formatComment({
     image: owlberts.create,
     imageLink: appUrl,
     headline: 'A review app has been launched for this PR!',
-    body: buildLinks(appName, appUrl, sha, message).join('\n\n'),
+    body: buildLinks(appName, appUrl, message).join('\n\n'),
   });
   return postComment(comment);
 };
 
-module.exports.postUpdateComment = async function (appName, appUrl, sha, message) {
+module.exports.postUpdateComment = async function (appName, appUrl, message) {
   const comment = formatComment({
     image: owlberts.update,
     imageLink: appUrl,
     headline: 'This PR’s review app has been redeployed!',
-    body: buildLinks(appName, appUrl, sha, message).join('\n\n'),
+    body: buildLinks(appName, appUrl, message).join('\n\n'),
   });
   return postComment(comment);
 };

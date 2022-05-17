@@ -4,7 +4,6 @@ const git = require('../src/git');
 
 const SAMPLE_APP_NAME = 'dr-owlbert-pr-1234';
 const SAMPLE_REF = 'refs/heads/dev';
-const SAMPLE_SHA = '0123456789abcdef0123456789abcdef01234567';
 const SAMPLE_EMAIL = 'jest-test-user@example.com';
 const SAMPLE_API_KEY = '12345678-1234-1234-1234-1234567890ab';
 const SAMPLE_MESSAGE = 'chore: replace Owlbert with Dewey Duck';
@@ -45,27 +44,6 @@ describe('#src/git', () => {
     it('should return false if the "git show-ref" command fails', () => {
       const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({ status: 1 });
       expect(git.refExists(SAMPLE_REF)).toBe(false);
-      expect(spy.mock.lastCall[0]).toBe('git');
-      expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
-    });
-  });
-
-  describe('shaForRef()', () => {
-    const EXPECTED_ARGS = ['rev-parse', '--verify', '--quiet', SAMPLE_REF];
-
-    it('should return true if the "git rev-parse" command succeeds', () => {
-      const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
-        status: 0,
-        stdout: Buffer.from(`${SAMPLE_SHA}\n`),
-      });
-      expect(git.shaForRef(SAMPLE_REF)).toBe(SAMPLE_SHA);
-      expect(spy.mock.lastCall[0]).toBe('git');
-      expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
-    });
-
-    it('should return undefined if the "git rev-parse" command fails', () => {
-      const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({ status: 1 });
-      expect(git.shaForRef(SAMPLE_REF)).toBeUndefined();
       expect(spy.mock.lastCall[0]).toBe('git');
       expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
     });

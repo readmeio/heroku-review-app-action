@@ -31,15 +31,6 @@ module.exports.refExists = ref => {
   return result.status === 0;
 };
 
-/* Returns the SHA-1 hash of the latest commit in the given ref. */
-module.exports.shaForRef = ref => {
-  const result = git('rev-parse', ['--verify', '--quiet', ref], true);
-  if (result.status !== 0) {
-    return undefined;
-  }
-  return result.stdout.toString().trim();
-};
-
 /*
  * Returns the short commit message the latest commit in the given ref. This is
  * usually only the first line of the message, but can occasionally be more than
