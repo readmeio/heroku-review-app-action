@@ -73,6 +73,21 @@ module.exports.getApp = async function (appName) {
   return herokuGet(`https://api.heroku.com/apps/${appName}`);
 };
 
+/*
+ * Loads all of the config vars for the given app. Filters out vars that are
+ * set by the Heroku Labs feature "runtime-dyno-metadata".
+ */
+module.exports.getAppVars = async function (appName) {
+  const vars = await herokuGet(`https://api.heroku.com/apps/${appName}/config-vars`);
+  delete vars.HEROKU_APP_ID;
+  delete vars.HEROKU_APP_NAME;
+  delete vars.HEROKU_RELEASE_CREATED_AT;
+  delete vars.HEROKU_RELEASE_VERSION;
+  delete vars.HEROKU_SLUG_COMMIT;
+  delete vars.HEROKU_SLUG_DESCRIPTION;
+  return vars;
+};
+
 /* Loads the UUID of the named pipeline from Heroku. */
 module.exports.getPipelineId = async function (pipelineName) {
   try {
