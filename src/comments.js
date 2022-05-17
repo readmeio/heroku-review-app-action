@@ -34,7 +34,7 @@ function formatComment(options) {
     }
   }
 
-  let result = options.headline ? `## ${img} ${options.headline}` : img;
+  let result = options.headline ? `## ${options.headline} ${img}` : img;
   if (options.body) {
     result += `\n\n${options.body}`;
   }
