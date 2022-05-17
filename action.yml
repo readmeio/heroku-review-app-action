@@ -10,6 +10,9 @@ inputs:
   pipeline_name:
     description: "The name of the Heroku pipeline where the app should be deployed"
     required: true
+  config_template_app:
+    description: "If present, config vars wil be copied from this app instead of from pipeline CI defaults"
+    required: false
   github_token:
     description: 'GITHUB_TOKEN or a repo scoped PAT.'
     default: ${{ github.token }}

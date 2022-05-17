@@ -4,7 +4,7 @@ const git = require('../git');
 const heroku = require('../heroku');
 
 async function createController(params) {
-  const { pipelineName, pipelineId, appName, refName } = params;
+  const { pipelineName, pipelineId, templateApp, appName, refName } = params;
 
   // Additional validation specific to the "create" action
   const exists = await heroku.appExists(appName);
@@ -15,7 +15,7 @@ async function createController(params) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
 
-  const configVars = await heroku.getPipelineVars(pipelineId);
+  const configVars = templateApp ? await heroku.getAppVars(templateApp) : await heroku.getPipelineVars(pipelineId);
 
   let stepCount = 4;
   if (Object.keys(configVars).length > 0) {

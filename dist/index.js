@@ -8689,7 +8689,7 @@ const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
 async function createController(params) {
-  const { pipelineName, pipelineId, appName, refName } = params;
+  const { pipelineName, pipelineId, templateApp, appName, refName } = params;
 
   // Additional validation specific to the "create" action
   const exists = await heroku.appExists(appName);
@@ -8700,7 +8700,7 @@ async function createController(params) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
 
-  const configVars = await heroku.getPipelineVars(pipelineId);
+  const configVars = templateApp ? await heroku.getAppVars(templateApp) : await heroku.getPipelineVars(pipelineId);
 
   let stepCount = 4;
   if (Object.keys(configVars).length > 0) {
@@ -8973,6 +8973,21 @@ module.exports.getApp = async function (appName) {
   return herokuGet(`https://api.heroku.com/apps/${appName}`);
 };
 
+/*
+ * Loads all of the config vars for the given app. Filters out vars that are
+ * set by the Heroku Labs feature "runtime-dyno-metadata".
+ */
+module.exports.getAppVars = async function (appName) {
+  const vars = await herokuGet(`https://api.heroku.com/apps/${appName}/config-vars`);
+  delete vars.HEROKU_APP_ID;
+  delete vars.HEROKU_APP_NAME;
+  delete vars.HEROKU_RELEASE_CREATED_AT;
+  delete vars.HEROKU_RELEASE_VERSION;
+  delete vars.HEROKU_SLUG_COMMIT;
+  delete vars.HEROKU_SLUG_DESCRIPTION;
+  return vars;
+};
+
 /* Loads the UUID of the named pipeline from Heroku. */
 module.exports.getPipelineId = async function (pipelineName) {
   try {
@@ -9123,6 +9138,14 @@ async function getParams() {
     throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
   }
 
+  const templateApp = core.getInput('config_template_app', { required: false });
+  if (templateApp) {
+    const exists = await heroku.appExists(templateApp);
+    if (!exists) {
+      throw new Error(`The template app "${templateApp}" does not exist on Heroku`);
+    }
+  }
+
   let baseName;
   const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
   if (reviewAppConfig) {
@@ -9144,7 +9167,7 @@ async function getParams() {
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  return { pipelineName, pipelineId, baseName, appName, refName };
+  return { pipelineName, pipelineId, templateApp, baseName, appName, refName };
 }
 
 /*
@@ -9155,13 +9178,14 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, baseName, appName, refName } = params;
+    const { pipelineName, pipelineId, baseName, appName, refName, templateApp } = params;
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
     core.info(`  - Git ref: ${refName}`);
     core.info(`  - Heroku pipeline name: ${pipelineName}`);
     core.info(`  - Heroku pipeline ID: ${pipelineId}`);
+    core.info(`  - Config template app: ${templateApp || 'none'}`);
     core.info(`  - Review app base name: ${baseName}`);
     core.info(`  - Heroku app name: ${appName}`);
 
