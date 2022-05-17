@@ -8646,24 +8646,41 @@ function formatComment(options) {
   return result;
 }
 
-module.exports.postCreateComment = async function (appName, appUrl) {
+function buildLinks(appName, appUrl, sha, message) {
+  const links = [];
+
+  if (sha && message) {
+    const owner = github.context.payload.repository.owner.login;
+    const repo = github.context.payload.repository.name;
+    const prNumber = parseInt(github.context.payload.number, 10);
+    const commitLink = `https://github.com/${owner}/${repo}/pull/${prNumber}/commits/${sha}`;
+    links.push(`:rocket: **Deployed commit:** [\`${sha.substring(0, 8)}\` ${message}](${commitLink})`);
+  }
+
   const dashboardUrl = `https://dashboard.heroku.com/apps/${appName}`;
+  links.push(`:mag: **Inspect the app:** ${dashboardUrl}`);
+
+  links.push(`:compass: **Take it for a spin:** ${appUrl}`);
+
+  return links;
+}
+
+module.exports.postCreateComment = async function (appName, appUrl, sha, message) {
   const comment = formatComment({
     image: owlberts.create,
     imageLink: appUrl,
     headline: 'A review app has been launched for this PR!',
-    body: `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`,
+    body: buildLinks(appName, appUrl, sha, message).join('\n\n'),
   });
   return postComment(comment);
 };
 
-module.exports.postUpdateComment = async function (appName, appUrl) {
-  const dashboardUrl = `https://dashboard.heroku.com/apps/${appName}`;
+module.exports.postUpdateComment = async function (appName, appUrl, sha, message) {
   const comment = formatComment({
     image: owlberts.update,
     imageLink: appUrl,
     headline: 'This PR’s review app has been redeployed!',
-    body: `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`,
+    body: buildLinks(appName, appUrl, sha, message).join('\n\n'),
   });
   return postComment(comment);
 };
@@ -8699,6 +8716,8 @@ async function createController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
+  const sha = git.shaForRef(refName);
+  const message = git.messageForRef(refName).split('\n')[0];
 
   const configVars = templateApp ? await heroku.getAppVars(templateApp) : await heroku.getPipelineVars(pipelineId);
 
@@ -8753,7 +8772,7 @@ async function createController(params) {
   }
 
   core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postCreateComment(appName, appUrl);
+  await comments.postCreateComment(appName, appUrl, sha, message);
   return true;
 }
 
@@ -8818,6 +8837,8 @@ async function updateController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
+  const sha = git.shaForRef(refName);
+  const message = git.messageForRef(refName).split('\n')[0];
 
   let appUrl;
   if (pipelineName === 'readme') {
@@ -8836,7 +8857,7 @@ async function updateController(params) {
   }
 
   core.info(`\nSuccessfully deployed changes to Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postUpdateComment(appName, appUrl);
+  await comments.postUpdateComment(appName, appUrl, sha, message);
   return true;
 }
 
@@ -8856,8 +8877,9 @@ const path = __nccwpck_require__(1017);
 /*
  * Wrapper to run an arbitrary git command
  */
-function git(command, args) {
-  const result = childProcess.spawnSync('git', [command, ...args], { stdio: 'inherit' });
+function git(command, args, captureOutput = false) {
+  const options = { stdio: captureOutput ? 'pipe' : 'inherit' };
+  const result = childProcess.spawnSync('git', [command, ...args], options);
   if (result.status !== 0 && process.env.NODE_ENV !== 'test') {
     core.warning(`\nWarning: git ${command} exited with status code ${result.status}.`);
   }
@@ -8878,6 +8900,28 @@ module.exports.repoExists = () => {
 module.exports.refExists = ref => {
   const result = git('show-ref', ['--verify', '--quiet', ref]);
   return result.status === 0;
+};
+
+/* Returns the SHA-1 hash of the latest commit in the given ref. */
+module.exports.shaForRef = ref => {
+  const result = git('rev-parse', ['--verify', '--quiet', ref], true);
+  if (result.status !== 0) {
+    return undefined;
+  }
+  return result.stdout.toString().trim();
+};
+
+/*
+ * Returns the short commit message the latest commit in the given ref. This is
+ * usually only the first line of the message, but can occasionally be more than
+ * one line, for example in merge commits.
+ */
+module.exports.messageForRef = ref => {
+  const result = git('log', ['--pretty=format:%s', '--quiet', `${ref}~1..${ref}`], true);
+  if (result.status !== 0) {
+    return undefined;
+  }
+  return result.stdout.toString().trim();
 };
 
 /*

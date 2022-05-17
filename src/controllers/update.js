@@ -14,6 +14,8 @@ async function updateController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
+  const sha = git.shaForRef(refName);
+  const message = git.messageForRef(refName).split('\n')[0];
 
   let appUrl;
   if (pipelineName === 'readme') {
@@ -32,7 +34,7 @@ async function updateController(params) {
   }
 
   core.info(`\nSuccessfully deployed changes to Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postUpdateComment(appName, appUrl);
+  await comments.postUpdateComment(appName, appUrl, sha, message);
   return true;
 }
 

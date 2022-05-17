@@ -6,8 +6,9 @@ const path = require('path');
 /*
  * Wrapper to run an arbitrary git command
  */
-function git(command, args) {
-  const result = childProcess.spawnSync('git', [command, ...args], { stdio: 'inherit' });
+function git(command, args, captureOutput = false) {
+  const options = { stdio: captureOutput ? 'pipe' : 'inherit' };
+  const result = childProcess.spawnSync('git', [command, ...args], options);
   if (result.status !== 0 && process.env.NODE_ENV !== 'test') {
     core.warning(`\nWarning: git ${command} exited with status code ${result.status}.`);
   }
@@ -28,6 +29,28 @@ module.exports.repoExists = () => {
 module.exports.refExists = ref => {
   const result = git('show-ref', ['--verify', '--quiet', ref]);
   return result.status === 0;
+};
+
+/* Returns the SHA-1 hash of the latest commit in the given ref. */
+module.exports.shaForRef = ref => {
+  const result = git('rev-parse', ['--verify', '--quiet', ref], true);
+  if (result.status !== 0) {
+    return undefined;
+  }
+  return result.stdout.toString().trim();
+};
+
+/*
+ * Returns the short commit message the latest commit in the given ref. This is
+ * usually only the first line of the message, but can occasionally be more than
+ * one line, for example in merge commits.
+ */
+module.exports.messageForRef = ref => {
+  const result = git('log', ['--pretty=format:%s', '--quiet', `${ref}~1..${ref}`], true);
+  if (result.status !== 0) {
+    return undefined;
+  }
+  return result.stdout.toString().trim();
 };
 
 /*
