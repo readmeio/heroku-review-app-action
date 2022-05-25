@@ -8625,7 +8625,7 @@ function getFakeOctokit() {
       issues: {
         createComment: () => {},
         updateComment: () => {},
-        listComments: () => [],
+        listComments: () => {},
       },
     },
   };
@@ -8661,12 +8661,15 @@ async function findExistingComment() {
   core.info(`    repo: ${github.context.payload.repository.name}`);
   core.info(`    issue_number: ${parseInt(github.context.payload.number, 10)}`);
   core.info('    per_page: 100');
+
+  const octokit = getOctokit();
   const resp = await octokit.rest.issues.listComments({
     owner: github.context.payload.repository.owner.login,
     repo: github.context.payload.repository.name,
     issue_number: parseInt(github.context.payload.number, 10),
     per_page: 100,
   });
+  // TODO validate resp
   core.info(`GitHub API returned status ${resp.status} and ${resp.data.length} comments`);
   const reviewAppComments = resp.data.filter(c => c.user.login === 'github-actions[bot]' && c.body.includes(owlbert));
   core.info(`With filter, there are ${reviewAppComments.length} matching comments`);
@@ -8687,12 +8690,14 @@ async function createComment(body) {
   core.info(`    issue_number: ${parseInt(github.context.payload.number, 10)}`);
   core.info(`    body: ${body.length} characters`);
 
-  const resp = await getOctokit().rest.issues.createComment({
+  const octokit = getOctokit();
+  const resp = octokit.rest.issues.createComment({
     owner: github.context.payload.repository.owner.login,
     repo: github.context.payload.repository.name,
     issue_number: parseInt(github.context.payload.number, 10),
     body,
   });
+  // TODO validate resp
   core.info(`GitHub API returned status ${resp.status}`);
   return resp;
 }
@@ -8707,12 +8712,14 @@ async function updateComment(commentId, body) {
   core.info(`    comment_id: ${commentId}`);
   core.info(`    body: ${body.length} characters`);
 
-  const resp = getOctokit().rest.issues.updateComment({
+  const octokit = getOctokit();
+  const resp = octokit.rest.issues.updateComment({
     owner: github.context.payload.repository.owner.login,
     repo: github.context.payload.repository.name,
     comment_id: commentId,
     body,
   });
+  // TODO validate resp
   core.info(`GitHub API returned status ${resp.status}`);
   return resp;
 }
