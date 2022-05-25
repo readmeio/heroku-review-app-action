@@ -1,7 +1,6 @@
 const comments = require('../comments');
 const core = require('@actions/core');
 const git = require('../git');
-const github = require('@actions/github');
 const heroku = require('../heroku');
 
 async function updateController(params) {
@@ -15,7 +14,7 @@ async function updateController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
-  const sha = github.context.sha;
+  const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
   const message = git.messageForRef(refName);
 
   let appUrl;

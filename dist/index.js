@@ -8922,7 +8922,6 @@ module.exports = deleteController;
 const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
 const git = __nccwpck_require__(109);
-const github = __nccwpck_require__(5438);
 const heroku = __nccwpck_require__(7213);
 
 async function updateController(params) {
@@ -8936,7 +8935,7 @@ async function updateController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
-  const sha = github.context.sha;
+  const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
   const message = git.messageForRef(refName);
 
   let appUrl;
@@ -8985,6 +8984,19 @@ function git(command, args, captureOutput = false) {
   return result;
 }
 
+/*
+ * Returns the short commit message the latest commit in the given ref. This is
+ * usually only the first line of the message, but can occasionally be more than
+ * one line, for example in merge commits.
+ */
+function gitLog(ref, format) {
+  const result = git('log', [`--pretty=format:${format}`, '--no-merges', '--quiet', `${ref}~1..${ref}`], true);
+  if (result.status !== 0) {
+    return undefined;
+  }
+  return result.stdout.toString().trim();
+}
+
 /* Checks whether the current directory contains a Git repo. Returns bool. */
 module.exports.repoExists = () => {
   try {
@@ -9002,16 +9014,19 @@ module.exports.refExists = ref => {
 };
 
 /*
- * Returns the short commit message the latest commit in the given ref. This is
- * usually only the first line of the message, but can occasionally be more than
- * one line, for example in merge commits.
+ * Returns the SHA hash of the latest commit in the given ref.
+ */
+module.exports.shaForRef = ref => {
+  return gitLog(ref, '%H');
+};
+
+/*
+ * Returns the short commit message of the latest commit in the given ref. This
+ * is usually only the first line of the message, but can occasionally be more
+ * than one line, for example in merge commits.
  */
 module.exports.messageForRef = ref => {
-  const result = git('log', ['--pretty=format:%s', '--quiet', `${ref}~1..${ref}`], true);
-  if (result.status !== 0) {
-    return undefined;
-  }
-  return result.stdout.toString().trim();
+  return gitLog(ref, '%s');
 };
 
 /*
