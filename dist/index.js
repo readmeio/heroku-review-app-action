@@ -8936,7 +8936,7 @@ async function updateController(params) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
   const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
-  const message = git.messageForRef(refName);
+  const message = git.messageForRef(refName).split('\n')[0]; // only include the first line in the comment
 
   let appUrl;
   if (pipelineName === 'readme') {
