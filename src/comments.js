@@ -155,9 +155,14 @@ module.exports.postUpdateComment = async function (appName, appUrl, sha, message
     return module.exports.postCreateComment(appName, appUrl);
   }
 
+  const owner = github.context.payload.repository.owner.login;
+  const repo = github.context.payload.repository.name;
+  const prNumber = parseInt(github.context.payload.number, 10);
+
   const date = getFormattedDate();
   const shortSha = sha.substring(0, 7);
-  const body = `${comment.body}\n- **Redeployed on ${date}:** ${shortSha} ${message}`;
+  const commitLink = `https://github.com/${owner}/${repo}/pull/${prNumber}/commits/${sha}`;
+  const body = `${comment.body}\n- **Redeployed on ${date}:** [\`${shortSha}\` ${message}](${commitLink})`;
 
   const resp = await updateComment(comment.id, body);
 
