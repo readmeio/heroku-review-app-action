@@ -7,9 +7,9 @@ const SAMPLE_REF = 'refs/heads/dev';
 const SAMPLE_EMAIL = 'jest-test-user@example.com';
 const SAMPLE_SHA = '1234567890123456789012345678901234567890';
 const SAMPLE_API_KEY = '12345678-1234-1234-1234-1234567890ab';
-const SAMPLE_MESSAGE = 'chore: replace Owlbert with Dewey Duck';
+const SAMPLE_SINGLE_LINE_MESSAGE = 'chore: replace Dewey Duck with Owlbert';
 const SAMPLE_MULTILINE_MESSAGE =
-  'Merge pull request #50 from readmeio/dr-owlbert\nchore: replace Owlbert with Louie Duck';
+  "chore: replace Dewey Duck with Owlbert\nHuey, Dewey, or Louie? Let's go with an owl instead.";
 
 describe('#src/git', () => {
   afterEach(() => {
@@ -63,6 +63,16 @@ describe('#src/git', () => {
       expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
     });
 
+    it('should return only the first line if the "git log" response contains multiple lines', () => {
+      const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
+        status: 0,
+        stdout: Buffer.from(`${SAMPLE_SHA}\n${SAMPLE_SHA}\n${SAMPLE_SHA}\n`),
+      });
+      expect(git.shaForRef(SAMPLE_REF)).toBe(SAMPLE_SHA);
+      expect(spy.mock.lastCall[0]).toBe('git');
+      expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
+    });
+
     it('should return undefined if the "git log" command fails', () => {
       const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({ status: 1 });
       expect(git.shaForRef(SAMPLE_REF)).toBeUndefined();
@@ -77,19 +87,19 @@ describe('#src/git', () => {
     it('should return the commit message if the "git log" command succeeds', () => {
       const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
         status: 0,
-        stdout: Buffer.from(`${SAMPLE_MESSAGE}\n`),
+        stdout: Buffer.from(`${SAMPLE_SINGLE_LINE_MESSAGE}\n`),
       });
-      expect(git.messageForRef(SAMPLE_REF)).toBe(SAMPLE_MESSAGE);
+      expect(git.messageForRef(SAMPLE_REF)).toBe(SAMPLE_SINGLE_LINE_MESSAGE);
       expect(spy.mock.lastCall[0]).toBe('git');
       expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
     });
 
-    it('should return multiple lines if the "git log" response contains multiple lines', () => {
+    it('should return only the first line if the "git log" response contains multiple lines', () => {
       const spy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
         status: 0,
         stdout: Buffer.from(`${SAMPLE_MULTILINE_MESSAGE}\n`),
       });
-      expect(git.messageForRef(SAMPLE_REF)).toBe(SAMPLE_MULTILINE_MESSAGE);
+      expect(git.messageForRef(SAMPLE_REF)).toBe(SAMPLE_SINGLE_LINE_MESSAGE);
       expect(spy.mock.lastCall[0]).toBe('git');
       expect(spy.mock.lastCall[1]).toStrictEqual(EXPECTED_ARGS);
     });

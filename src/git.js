@@ -25,7 +25,8 @@ function gitLog(ref, format) {
   if (result.status !== 0) {
     return undefined;
   }
-  return result.stdout.toString().trim();
+  // convert the buffer to a string, then return just the first line
+  return result.stdout.toString().trim().split('\n')[0];
 }
 
 /* Checks whether the current directory contains a Git repo. Returns bool. */
