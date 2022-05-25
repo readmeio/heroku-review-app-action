@@ -27,21 +27,21 @@ function getFakeOctokit() {
   };
 }
 
-let octokit;
+let memoizedOctokit;
 
 /*
  * Returns an instance of Octokit, or a stub if there's no auth token present.
  */
 function getOctokit() {
-  if (!octokit) {
+  if (!memoizedOctokit) {
     const token = core.getInput('github_token', { required: false });
     if (!token) {
       core.warning('GitHub API token not present, not commenting on this pull request');
-      octokit = getFakeOctokit();
+      memoizedOctokit = getFakeOctokit();
     }
-    octokit = github.getOctokit(token);
+    memoizedOctokit = github.getOctokit(token);
   }
-  return octokit;
+  return memoizedOctokit;
 }
 
 /*
