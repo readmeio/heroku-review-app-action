@@ -8759,14 +8759,9 @@ module.exports.postUpdateComment = async function (appName, appUrl, sha, message
     return module.exports.postCreateComment(appName, appUrl);
   }
 
-  const owner = github.context.payload.repository.owner.login;
-  const repo = github.context.payload.repository.name;
-  const prNumber = parseInt(github.context.payload.number, 10);
-
   const date = getFormattedDate();
   const shortSha = sha.substring(0, 7);
-  const commitLink = `https://github.com/${owner}/${repo}/pull/${prNumber}/commits/${sha}`;
-  const body = `${comment.body}\n- **Redeployed on ${date}:** [\`${shortSha}\` ${message}](${commitLink})`;
+  const body = `${comment.body}\n- **Redeployed on ${date}:** ${shortSha} ${message}`;
 
   const resp = await updateComment(comment.id, body);
 
@@ -8936,7 +8931,7 @@ async function updateController(params) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
   const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
-  const message = git.messageForRef(refName).split('\n')[0]; // only include the first line in the comment
+  const message = git.messageForRef(refName);
 
   let appUrl;
   if (pipelineName === 'readme') {
@@ -8994,7 +8989,8 @@ function gitLog(ref, format) {
   if (result.status !== 0) {
     return undefined;
   }
-  return result.stdout.toString().trim();
+  // convert the buffer to a string, then return just the first line
+  return result.stdout.toString().trim().split('\n')[0];
 }
 
 /* Checks whether the current directory contains a Git repo. Returns bool. */
