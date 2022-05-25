@@ -52,12 +52,20 @@ function getOctokit() {
  * the PR is closed and reopened, this the most recent.
  */
 async function findExistingComment() {
+  core.info('calling octokit.rest.issues.listComments with these params:');
+  core.info(`    owner: ${github.context.payload.repository.owner.login}`);
+  core.info(`    repo: ${github.context.payload.repository.name}`);
+  core.info(`    issue_number: ${parseInt(github.context.payload.number, 10)}`);
+  core.info('    per_page: 100');
   const resp = await octokit.rest.issues.listComments({
     owner: github.context.payload.repository.owner.login,
     repo: github.context.payload.repository.name,
     issue_number: parseInt(github.context.payload.number, 10),
+    per_page: 100,
   });
+  core.info(`GitHub API returned status ${resp.status} and ${resp.data.length} comments`);
   const reviewAppComments = resp.data.filter(c => c.user.login === 'github-actions[bot]' && c.body.includes(owlbert));
+  core.info(`With filter, there are ${reviewAppComments.length} matching comments`);
   if (reviewAppComments.length > 0) {
     // the last comment in the array is the most recent
     return reviewAppComments[reviewAppComments.length - 1];
@@ -69,36 +77,59 @@ async function findExistingComment() {
  * Sends a new comment to GitHub.
  */
 async function createComment(body) {
-  return getOctokit().rest.issues.createComment({
+  core.info('calling octokit.rest.issues.createComment with these params:');
+  core.info(`    owner: ${github.context.payload.repository.owner.login}`);
+  core.info(`    repo: ${github.context.payload.repository.name}`);
+  core.info(`    issue_number: ${parseInt(github.context.payload.number, 10)}`);
+  core.info(`    body: ${body.length} characters`);
+
+  const resp = await getOctokit().rest.issues.createComment({
     owner: github.context.payload.repository.owner.login,
     repo: github.context.payload.repository.name,
     issue_number: parseInt(github.context.payload.number, 10),
     body,
   });
+  core.info(`GitHub API returned status ${resp.status}`);
+  return resp;
 }
 
 /*
  * Modifies an existing comment on GitHub.
  */
 async function updateComment(commentId, body) {
-  return getOctokit().rest.issues.updateComment({
+  core.info('calling octokit.rest.issues.updateComment with these params:');
+  core.info(`    owner: ${github.context.payload.repository.owner.login}`);
+  core.info(`    repo: ${github.context.payload.repository.name}`);
+  core.info(`    comment_id: ${commentId}`);
+  core.info(`    body: ${body.length} characters`);
+
+  const resp = getOctokit().rest.issues.updateComment({
     owner: github.context.payload.repository.owner.login,
     repo: github.context.payload.repository.name,
     comment_id: commentId,
     body,
   });
+  core.info(`GitHub API returned status ${resp.status}`);
+  return resp;
 }
 
 /*
  * Entrypoint to post a new PR comment when we open a new review app.
  */
 module.exports.postCreateComment = async function (appName, appUrl) {
+  core.info('running postCreateComment with these params:');
+  core.info(`    appName: ${appName}`);
+  core.info(`    appUrl: ${appUrl}`);
+
   const dashboardUrl = `https://dashboard.heroku.com/apps/${appName}`;
   const img = `<a href="${appUrl}"><img align="right" height="100" src="${owlbert}" /></a>`;
   const links = `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`;
 
   const comment = `## A review app has been launched for this PR! ${img}\n\n${links}\n`;
-  return createComment(comment);
+  const resp = await createComment(comment);
+
+  core.info('Finished running postCreateComment\n');
+  return resp;
 };
 
 /*
@@ -106,6 +137,12 @@ module.exports.postCreateComment = async function (appName, appUrl) {
  * If this can't find an existing PR comment, it can just create a new one.
  */
 module.exports.postUpdateComment = async function (appName, appUrl, sha, message) {
+  core.info('running postUpdateComment with these params:');
+  core.info(`    appName: ${appName}`);
+  core.info(`    appUrl: ${appUrl}`);
+  core.info(`    sha: ${sha}`);
+  core.info(`    message: ${message}`);
+
   const comment = await findExistingComment();
   if (!comment) {
     return module.exports.postCreateComment(appName, appUrl);
@@ -120,7 +157,10 @@ module.exports.postUpdateComment = async function (appName, appUrl, sha, message
   const commitLink = `https://github.com/${owner}/${repo}/pull/${prNumber}/commits/${sha}`;
   const body = `${comment.body}\n- **Redeployed on ${date}:** [\`${shortSha}\` ${message}](${commitLink})`;
 
-  return updateComment(comment.id, body);
+  const resp = await updateComment(comment.id, body);
+
+  core.info('Finished running postUpdateComment\n');
+  return resp;
 };
 
 /*
@@ -128,6 +168,7 @@ module.exports.postUpdateComment = async function (appName, appUrl, sha, message
  * If this can't find an existing PR comment, it doesn't do anything.
  */
 module.exports.postDeleteComment = async function () {
+  core.info('running postDeleteComment with no params:');
   const comment = await findExistingComment();
   if (!comment) {
     return undefined;
@@ -135,5 +176,8 @@ module.exports.postDeleteComment = async function () {
 
   const date = getFormattedDate();
   const body = `${comment.body}\n- **Shut down on ${date}:** Since this PR is closed, its review app has been cleaned up. :sponge:`;
-  return updateComment(comment.id, body);
+  const resp = await updateComment(comment.id, body);
+
+  core.info('Finished running postDeleteComment\n');
+  return resp;
 };
