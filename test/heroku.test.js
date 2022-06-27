@@ -31,37 +31,6 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe('getAppVars()', () => {
-      it('should return the config vars for the given app', async () => {
-        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}/config-vars`).reply(200, SAMPLE_CONFIG_VARS);
-        await expect(heroku.getAppVars(SAMPLE_APP_NAME)).resolves.toStrictEqual(SAMPLE_CONFIG_VARS);
-      });
-
-      it('should throw an error if the app does not exist', async () => {
-        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}/config-vars`).reply(404);
-        await expect(heroku.getAppVars(SAMPLE_APP_NAME)).rejects.toThrow(/404/);
-      });
-
-      it('should filter config vars from the Heroku Labs feature "runtime-dyno-metadata"', async () => {
-        const allVars = {
-          HEROKU_APP_ID: SAMPLE_APP_ID,
-          HEROKU_APP_NAME: SAMPLE_APP_NAME,
-          HEROKU_IS_AWESOME: 'not exactly',
-          HEROKU_RELEASE_CREATED_AT: '2022-04-01T00:00:00Z',
-          HEROKU_RELEASE_VERSION: 'v255',
-          HEROKU_SLUG_COMMIT: '0123456789abcdef0123456789abcdef01234567',
-          HEROKU_SLUG_DESCRIPTION: 'Deploy 01234567',
-          README_IS_AWESOME: 'definitely',
-        };
-        const filteredVars = {
-          HEROKU_IS_AWESOME: 'not exactly',
-          README_IS_AWESOME: 'definitely',
-        };
-        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}/config-vars`).reply(200, allVars);
-        await expect(heroku.getAppVars(SAMPLE_APP_NAME)).resolves.toStrictEqual(filteredVars);
-      });
-    });
-
     describe('getPipelineId()', () => {
       it('should return the UUID of the given pipeline', async () => {
         nock('https://api.heroku.com').get(`/pipelines/${SAMPLE_PIPELINE_NAME}`).reply(200, { id: SAMPLE_PIPELINE_ID });
