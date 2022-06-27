@@ -19,14 +19,6 @@ async function getParams() {
     throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
   }
 
-  const templateApp = core.getInput('config_template_app', { required: false });
-  if (templateApp) {
-    const exists = await heroku.appExists(templateApp);
-    if (!exists) {
-      throw new Error(`The template app "${templateApp}" does not exist on Heroku`);
-    }
-  }
-
   let baseName;
   const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
   if (reviewAppConfig) {
@@ -48,7 +40,7 @@ async function getParams() {
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  return { pipelineName, pipelineId, templateApp, baseName, appName, refName };
+  return { pipelineName, pipelineId, baseName, appName, refName };
 }
 
 /*
@@ -59,14 +51,13 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, baseName, appName, refName, templateApp } = params;
+    const { pipelineName, pipelineId, baseName, appName, refName } = params;
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
     core.info(`  - Git ref: ${refName}`);
     core.info(`  - Heroku pipeline name: ${pipelineName}`);
     core.info(`  - Heroku pipeline ID: ${pipelineId}`);
-    core.info(`  - Config template app: ${templateApp || 'none'}`);
     core.info(`  - Review app base name: ${baseName}`);
     core.info(`  - Heroku app name: ${appName}`);
 
