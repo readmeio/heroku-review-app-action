@@ -186,6 +186,18 @@ module.exports.setAppVars = async function (appId, vars) {
   return resp.json();
 };
 
+/*
+ * Adds a log drain to the given app
+ */
+module.exports.addDrain = async function (appId, url) {
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}/log-drains`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  return resp.json();
+};
+
 /* Creates a new one-off dyno to run the given command in the background. */
 module.exports.runAppCommand = async function (appId, command) {
   const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}/dynos`, {

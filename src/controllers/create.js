@@ -4,7 +4,7 @@ const git = require('../git');
 const heroku = require('../heroku');
 
 async function createController(params) {
-  const { pipelineName, pipelineId, appName, refName } = params;
+  const { pipelineName, pipelineId, logDrainUrl, appName, refName } = params;
 
   // Additional validation specific to the "create" action
   const exists = await heroku.appExists(appName);
@@ -20,6 +20,9 @@ async function createController(params) {
 
   let stepCount = 4;
   if (Object.keys(configVars).length > 0) {
+    stepCount += 1;
+  }
+  if (logDrainUrl) {
     stepCount += 1;
   }
   if (pipelineName === 'readme') {
@@ -45,6 +48,12 @@ async function createController(params) {
     currentStep += 1;
     core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
     await heroku.setAppVars(app.id, configVars);
+  }
+
+  if (logDrainUrl) {
+    currentStep += 1;
+    core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
+    await heroku.addDrain(app.id, logDrainUrl);
   }
 
   currentStep += 1;

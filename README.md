@@ -34,6 +34,12 @@ jobs:
 
 Once that file has been committed to your main branch, this should automatically open and close review apps as needed.
 
+## GitHub Action parameters
+
+* `heroku_api_key`: Personal API key for a Heroku user. Required.
+* `heroku_email`: Email address of that Heroku user. Required.
+* `pipeline_name`: Name of the Heroku pipeline which contains review apps for this repo. Must already exist in Heroku. Required.
+* `log_drain_url`: If specified, this log drain will be added to review apps when they are created. If you want to include the PR number in the URL, you can use `${{github.event.number}}`. Optional.
 
 ## Caveats
 

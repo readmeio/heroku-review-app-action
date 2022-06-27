@@ -8864,7 +8864,7 @@ const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
 async function createController(params) {
-  const { pipelineName, pipelineId, appName, refName } = params;
+  const { pipelineName, pipelineId, logDrainUrl, appName, refName } = params;
 
   // Additional validation specific to the "create" action
   const exists = await heroku.appExists(appName);
@@ -8880,6 +8880,9 @@ async function createController(params) {
 
   let stepCount = 4;
   if (Object.keys(configVars).length > 0) {
+    stepCount += 1;
+  }
+  if (logDrainUrl) {
     stepCount += 1;
   }
   if (pipelineName === 'readme') {
@@ -8905,6 +8908,12 @@ async function createController(params) {
     currentStep += 1;
     core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
     await heroku.setAppVars(app.id, configVars);
+  }
+
+  if (logDrainUrl) {
+    currentStep += 1;
+    core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
+    await heroku.addDrain(app.id, logDrainUrl);
   }
 
   currentStep += 1;
@@ -9295,6 +9304,18 @@ module.exports.setAppVars = async function (appId, vars) {
   return resp.json();
 };
 
+/*
+ * Adds a log drain to the given app
+ */
+module.exports.addDrain = async function (appId, url) {
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}/log-drains`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  return resp.json();
+};
+
 /* Creates a new one-off dyno to run the given command in the background. */
 module.exports.runAppCommand = async function (appId, command) {
   const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}/dynos`, {
@@ -9332,6 +9353,8 @@ async function getParams() {
     throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
   }
 
+  const logDrainUrl = core.getInput('log_drain_url', { required: false });
+
   let baseName;
   const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
   if (reviewAppConfig) {
@@ -9353,7 +9376,7 @@ async function getParams() {
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  return { pipelineName, pipelineId, baseName, appName, refName };
+  return { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName };
 }
 
 /*
@@ -9364,13 +9387,14 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, baseName, appName, refName } = params;
+    const { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName } = params;
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
     core.info(`  - Git ref: ${refName}`);
     core.info(`  - Heroku pipeline name: ${pipelineName}`);
     core.info(`  - Heroku pipeline ID: ${pipelineId}`);
+    core.info(`  - Log drain URL: ${logDrainUrl || 'none'}`);
     core.info(`  - Review app base name: ${baseName}`);
     core.info(`  - Heroku app name: ${appName}`);
 

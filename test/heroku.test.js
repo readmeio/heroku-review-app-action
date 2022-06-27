@@ -5,6 +5,7 @@ const SAMPLE_APP_ID = '33333333-4444-5555-6666-777777777777';
 const SAMPLE_APP_NAME = 'dr-owlbert-pr-1234';
 const SAMPLE_COMMAND = 'npm run lint';
 const SAMPLE_CONFIG_VARS = { MAILCHIMP_API_KEY: '123', NODE_ENV: 'pr' };
+const SAMPLE_DRAIN_URL = 'https://logs.example.com/my-log-drain';
 const SAMPLE_PIPELINE_ID = '12121212-3434-5656-7878-909090909090';
 const SAMPLE_PIPELINE_NAME = 'aqueduct';
 const SAMPLE_RESPONSE = { response_field: 'response_value' };
@@ -129,6 +130,15 @@ describe('#src/heroku', () => {
           .patch(`/apps/${SAMPLE_APP_ID}/config-vars`, SAMPLE_CONFIG_VARS)
           .reply(200, SAMPLE_RESPONSE);
         await expect(heroku.setAppVars(SAMPLE_APP_ID, SAMPLE_CONFIG_VARS)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+      });
+    });
+
+    describe('addDrain()', () => {
+      it('should POST to the correct endpoint to set up a log drain', async () => {
+        nock('https://api.heroku.com')
+          .post(`/apps/${SAMPLE_APP_ID}/log-drains`, { url: SAMPLE_DRAIN_URL })
+          .reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.addDrain(SAMPLE_APP_ID, SAMPLE_DRAIN_URL)).resolves.toStrictEqual(SAMPLE_RESPONSE);
       });
     });
 

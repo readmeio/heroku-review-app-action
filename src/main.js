@@ -19,6 +19,8 @@ async function getParams() {
     throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
   }
 
+  const logDrainUrl = core.getInput('log_drain_url', { required: false });
+
   let baseName;
   const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
   if (reviewAppConfig) {
@@ -40,7 +42,7 @@ async function getParams() {
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  return { pipelineName, pipelineId, baseName, appName, refName };
+  return { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName };
 }
 
 /*
@@ -51,13 +53,14 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, baseName, appName, refName } = params;
+    const { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName } = params;
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
     core.info(`  - Git ref: ${refName}`);
     core.info(`  - Heroku pipeline name: ${pipelineName}`);
     core.info(`  - Heroku pipeline ID: ${pipelineId}`);
+    core.info(`  - Log drain URL: ${logDrainUrl || 'none'}`);
     core.info(`  - Review app base name: ${baseName}`);
     core.info(`  - Heroku app name: ${appName}`);
 
