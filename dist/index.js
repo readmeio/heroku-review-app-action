@@ -9355,17 +9355,25 @@ async function getParams() {
 
   const logDrainUrl = core.getInput('log_drain_url', { required: false });
 
-  let baseName;
-  const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
-  if (reviewAppConfig) {
-    baseName = reviewAppConfig.base_name;
-  } else {
-    baseName = pipelineName;
-  }
-
   const prNumber = parseInt(github.context.payload.number, 10);
   if (!prNumber) {
     throw new Error(`"${prNumber}" is not a valid pull request number (must be an integer)`);
+  }
+
+  let baseName;
+  if (pipelineName === 'readme' && prNumber < 7100 && prNumber !== 7050) {
+    // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100.
+    // We need to hardcode a workaround for PRs opened before that. However
+    // we manually renamed Gabe's PR #7050 thinking that was a good solution,
+    // so the workaround doesn't apply to #7050.
+    baseName = 'readme-stage';
+  } else {
+    const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
+    if (reviewAppConfig) {
+      baseName = reviewAppConfig.base_name;
+    } else {
+      baseName = pipelineName;
+    }
   }
 
   const appName = `${baseName}-pr-${prNumber}`;
