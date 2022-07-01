@@ -52,7 +52,7 @@ module.exports.initializeCredentials = function () {
 
   HEROKU_API_KEY = core.getInput('heroku_api_key', { required: true });
   if (!/^[a-f0-9-]+$/.test(HEROKU_API_KEY)) {
-    throw new Error(`Invalid heroku_api_key value (redacted)`);
+    throw new Error('Invalid heroku_api_key value (redacted)');
   }
   core.setSecret(HEROKU_API_KEY);
 };

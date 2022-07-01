@@ -67,7 +67,7 @@ describe('#src/heroku', () => {
       });
 
       it('should reurn undefined if review apps are not configured for the pipeline', async () => {
-        nock('https://api.heroku.com').get(`/pipelines/foo/review-app-config`).reply(404);
+        nock('https://api.heroku.com').get('/pipelines/foo/review-app-config').reply(404);
         await expect(heroku.getReviewAppConfig('foo')).resolves.toBeUndefined();
       });
     });
@@ -89,7 +89,7 @@ describe('#src/heroku', () => {
     describe('createApp()', () => {
       it('should POST to the correct endpoint to create an app', async () => {
         nock('https://api.heroku.com')
-          .post(`/teams/apps`, { name: SAMPLE_APP_NAME, region: 'us', team: 'readme' })
+          .post('/teams/apps', { name: SAMPLE_APP_NAME, region: 'us', team: 'readme' })
           .reply(200, SAMPLE_RESPONSE);
         await expect(heroku.createApp(SAMPLE_APP_NAME)).resolves.toStrictEqual(SAMPLE_RESPONSE);
       });
@@ -105,7 +105,7 @@ describe('#src/heroku', () => {
     describe('coupleAppToPipeline()', () => {
       it('should POST to the correct endpoint to create a pipeline coupling', async () => {
         nock('https://api.heroku.com')
-          .post(`/pipeline-couplings`, { app: SAMPLE_APP_ID, pipeline: SAMPLE_PIPELINE_ID, stage: /.*/ })
+          .post('/pipeline-couplings', { app: SAMPLE_APP_ID, pipeline: SAMPLE_PIPELINE_ID, stage: /.*/ })
           .reply(200, SAMPLE_RESPONSE);
         await expect(heroku.coupleAppToPipeline(SAMPLE_APP_ID, SAMPLE_PIPELINE_ID)).resolves.toStrictEqual(
           SAMPLE_RESPONSE
