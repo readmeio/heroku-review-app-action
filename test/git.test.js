@@ -25,7 +25,7 @@ describe('#src/git', () => {
 
     it('should return false if the working directory does not contain a git repo', () => {
       const spy = jest.spyOn(fs, 'statSync').mockImplementation(() => {
-        throw new Error(`ENOENT: no such file or directory, stat '.git'`);
+        throw new Error("ENOENT: no such file or directory, stat '.git'");
       });
       expect(git.repoExists()).toBe(false);
       expect(spy).toHaveBeenCalledWith('.git');

@@ -16,7 +16,7 @@ async function deleteController(params) {
     const app = await heroku.getApp(appName);
     await heroku.runAppCommand(app.id, 'node bin/removedomain.js');
 
-    core.info(`Waiting 45 seconds for Cloudflare DNS entries to be deleted asynchronously...`);
+    core.info('Waiting 45 seconds for Cloudflare DNS entries to be deleted asynchronously...');
     await new Promise(r => setTimeout(r, 45000)); // eslint-disable-line no-promise-executor-return
   }
 
