@@ -36,7 +36,7 @@
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.26.0",
     "husky": "^8.0.1",
-    "jest": "^28.1.0",
+    "jest": "^28.1.2",
     "jest-extended": "^2.0.0",
     "nock": "^13.2.4",
     "prettier": "^2.6.2"
