@@ -30,7 +30,7 @@
     "node-fetch": "^2.6.7"
   },
   "devDependencies": {
-    "@readme/eslint-config": "^8.8.0",
+    "@readme/eslint-config": "^9.0.0",
     "@vercel/ncc": "^0.34.0",
     "eslint": "^8.20.0",
     "eslint-import-resolver-alias": "^1.1.2",
