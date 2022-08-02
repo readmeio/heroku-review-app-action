@@ -425,6 +425,13 @@ Object.defineProperty(exports, "summary", ({ enumerable: true, get: function () 
  */
 var summary_2 = __nccwpck_require__(1327);
 Object.defineProperty(exports, "markdownSummary", ({ enumerable: true, get: function () { return summary_2.markdownSummary; } }));
+/**
+ * Path exports
+ */
+var path_utils_1 = __nccwpck_require__(2981);
+Object.defineProperty(exports, "toPosixPath", ({ enumerable: true, get: function () { return path_utils_1.toPosixPath; } }));
+Object.defineProperty(exports, "toWin32Path", ({ enumerable: true, get: function () { return path_utils_1.toWin32Path; } }));
+Object.defineProperty(exports, "toPlatformPath", ({ enumerable: true, get: function () { return path_utils_1.toPlatformPath; } }));
 //# sourceMappingURL=core.js.map
 
 /***/ }),
@@ -559,6 +566,71 @@ class OidcClient {
 }
 exports.OidcClient = OidcClient;
 //# sourceMappingURL=oidc-utils.js.map
+
+/***/ }),
+
+/***/ 2981:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toPlatformPath = exports.toWin32Path = exports.toPosixPath = void 0;
+const path = __importStar(__nccwpck_require__(1017));
+/**
+ * toPosixPath converts the given path to the posix form. On Windows, \\ will be
+ * replaced with /.
+ *
+ * @param pth. Path to transform.
+ * @return string Posix path.
+ */
+function toPosixPath(pth) {
+    return pth.replace(/[\\]/g, '/');
+}
+exports.toPosixPath = toPosixPath;
+/**
+ * toWin32Path converts the given path to the win32 form. On Linux, / will be
+ * replaced with \\.
+ *
+ * @param pth. Path to transform.
+ * @return string Win32 path.
+ */
+function toWin32Path(pth) {
+    return pth.replace(/[/]/g, '\\');
+}
+exports.toWin32Path = toWin32Path;
+/**
+ * toPlatformPath converts the given path to a platform-specific path. It does
+ * this by replacing instances of / and \ with the platform-specific path
+ * separator.
+ *
+ * @param pth The path to platformize.
+ * @return string The platform-specific path.
+ */
+function toPlatformPath(pth) {
+    return pth.replace(/[/\\]/g, path.sep);
+}
+exports.toPlatformPath = toPlatformPath;
+//# sourceMappingURL=path-utils.js.map
 
 /***/ }),
 
@@ -8855,98 +8927,6 @@ module.exports.postDeleteComment = async function () {
 
 /***/ }),
 
-/***/ 7158:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const comments = __nccwpck_require__(4975);
-const core = __nccwpck_require__(2186);
-const git = __nccwpck_require__(109);
-const heroku = __nccwpck_require__(7213);
-
-async function createController(params) {
-  const { pipelineName, pipelineId, logDrainUrl, appName, refName } = params;
-
-  // Additional validation specific to the "create" action
-  const exists = await heroku.appExists(appName);
-  if (exists) {
-    throw new Error(`Unable to create new PR app: an app named "${appName}" app already exists on Heroku`);
-  }
-  if (!git.refExists(refName)) {
-    throw new Error(`Ref "${refName}" does not exist.`);
-  }
-  const message = git.messageForRef(refName);
-
-  const configVars = await heroku.getPipelineVars(pipelineId);
-
-  let stepCount = 4;
-  if (Object.keys(configVars).length > 0) {
-    stepCount += 1;
-  }
-  if (logDrainUrl) {
-    stepCount += 1;
-  }
-  if (pipelineName === 'readme') {
-    stepCount += 2;
-  }
-
-  let currentStep = 1;
-  core.info(`\n[Step ${currentStep}/${stepCount}] Creating Heroku app "${appName}..."`);
-  const app = await heroku.createApp(appName, pipelineId);
-  let appUrl = app.web_url;
-
-  currentStep += 1;
-  core.info(`[Step ${currentStep}/${stepCount}] Associating app with Heroku pipeline "${pipelineName}"...`);
-  await heroku.coupleAppToPipeline(app.id, pipelineId);
-
-  currentStep += 1;
-  core.info(`[Step ${currentStep}/${stepCount}] Enabling Heroku Labs features...`);
-  await heroku.setAppFeature(app.id, 'nodejs-language-metrics', true);
-  await heroku.setAppFeature(app.id, 'runtime-dyno-metadata', true);
-  await heroku.setAppFeature(app.id, 'runtime-heroku-metrics', true);
-
-  if (Object.keys(configVars).length > 0) {
-    currentStep += 1;
-    core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
-    await heroku.setAppVars(app.id, configVars);
-  }
-
-  if (logDrainUrl) {
-    currentStep += 1;
-    core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
-    await heroku.addDrain(app.id, logDrainUrl);
-  }
-
-  currentStep += 1;
-  core.info(
-    `[Step ${currentStep}/${stepCount}] Deploying the app to Heroku for the first time -- this may take a few minutes...\n`
-  );
-  const credentials = heroku.getCredentials();
-  const pushResult = git.push(credentials, appName, refName);
-  if (pushResult.status !== 0) {
-    throw new Error(`Created Heroku app "${appName}" but ran into errors deploying for the first time.`);
-  }
-
-  if (pipelineName === 'readme') {
-    currentStep += 1;
-    core.info(`\n[Step ${currentStep}/${stepCount}] Configuring custom domains in Cloudflare...`);
-    await heroku.runAppCommand(app.id, 'node bin/setdomain.js');
-    appUrl = `http://${appName}.readme.ninja`;
-
-    currentStep += 1;
-    core.info(`[Step ${currentStep}/${stepCount}] Triggering RainforestQA testing for the new PR app...`);
-    await heroku.runAppCommand(app.id, 'node bin/subscribe-rainforest.js');
-  }
-
-  core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postCreateComment(appName, appUrl, message);
-  return true;
-}
-
-module.exports = createController;
-
-
-/***/ }),
-
 /***/ 5839:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -8968,7 +8948,7 @@ async function deleteController(params) {
     const app = await heroku.getApp(appName);
     await heroku.runAppCommand(app.id, 'node bin/removedomain.js');
 
-    core.info(`Waiting 45 seconds for Cloudflare DNS entries to be deleted asynchronously...`);
+    core.info('Waiting 45 seconds for Cloudflare DNS entries to be deleted asynchronously...');
     await new Promise(r => setTimeout(r, 45000)); // eslint-disable-line no-promise-executor-return
   }
 
@@ -8984,7 +8964,7 @@ module.exports = deleteController;
 
 /***/ }),
 
-/***/ 2477:
+/***/ 786:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const comments = __nccwpck_require__(4975);
@@ -8992,42 +8972,94 @@ const core = __nccwpck_require__(2186);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
-async function updateController(params) {
-  const { pipelineName, appName, refName } = params;
+async function upsertController(params) {
+  const { pipelineName, pipelineId, logDrainUrl, appName, refName } = params;
 
-  // Additional validation specific to the "update" action
-  const exists = await heroku.appExists(appName);
-  if (!exists) {
-    throw new Error(`Unable to update PR app: there is no app named "${appName}" on Heroku`);
-  }
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
-  const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
   const message = git.messageForRef(refName);
+  const configVars = await heroku.getPipelineVars(pipelineId);
 
-  let appUrl;
+  let stepCount = 4;
+  if (Object.keys(configVars).length > 0) {
+    stepCount += 1;
+  }
+  if (logDrainUrl) {
+    stepCount += 1;
+  }
   if (pipelineName === 'readme') {
-    appUrl = `http://${appName}.readme.ninja`;
-  } else {
-    const app = await heroku.getApp(appName);
-    appUrl = app.web_url;
+    stepCount += 1;
   }
 
-  core.info(`Deploying to Heroku app "${appName}" -- this may take a few minutes...\n`);
+  let currentStep = 1;
+  core.info(`\n[Step ${currentStep}/${stepCount}] Creating Heroku app "${appName}" if it doesn't already exist...`);
+  const appExists = await heroku.appExists(appName);
+  let app;
+  if (appExists) {
+    core.info('  - The app already exists, skipping this step.');
+    app = await heroku.getApp(appName);
+  } else {
+    app = await heroku.createApp(appName, pipelineId);
+  }
+  let appUrl = app.web_url;
 
+  currentStep += 1;
+  core.info(`[Step ${currentStep}/${stepCount}] Associating app with Heroku pipeline "${pipelineName}"...`);
+  const pipelineApps = await heroku.getPipelineApps(pipelineId);
+  if (pipelineApps.includes(app.id)) {
+    core.info('  - The app is already associated with the correct pipeline, skipping this step.');
+  } else {
+    await heroku.coupleAppToPipeline(app.id, pipelineId);
+  }
+
+  currentStep += 1;
+  core.info(`[Step ${currentStep}/${stepCount}] Enabling Heroku Labs features...`);
+  await heroku.setAppFeature(app.id, 'nodejs-language-metrics', true);
+  await heroku.setAppFeature(app.id, 'runtime-dyno-metadata', true);
+  await heroku.setAppFeature(app.id, 'runtime-heroku-metrics', true);
+
+  if (Object.keys(configVars).length > 0) {
+    currentStep += 1;
+    core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
+    if (appExists) {
+      core.info('  - Note: This will reset any config vars that you have changed on this app.');
+    }
+    await heroku.setAppVars(app.id, configVars);
+  }
+
+  if (logDrainUrl) {
+    currentStep += 1;
+    core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
+    const existingDrains = await heroku.getDrains(app.id);
+    if (existingDrains.includes(logDrainUrl)) {
+      core.info('  - The app is already configured to send logs, skipping this step.');
+    } else {
+      await heroku.addDrain(app.id, logDrainUrl);
+    }
+  }
+
+  currentStep += 1;
+  core.info(`[Step ${currentStep}/${stepCount}] Deploying the app to Heroku -- this may take a few minutes...\n`);
   const credentials = heroku.getCredentials();
   const pushResult = git.push(credentials, appName, refName);
   if (pushResult.status !== 0) {
-    throw new Error(`Ran into errors deploying the app "${appName}"`);
+    throw new Error(`Created Heroku app "${appName}" but ran into errors deploying.`);
   }
 
-  core.info(`\nSuccessfully deployed changes to Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postUpdateComment(appName, appUrl, sha, message);
+  if (pipelineName === 'readme') {
+    currentStep += 1;
+    core.info(`\n[Step ${currentStep}/${stepCount}] Configuring custom domains in Cloudflare...`);
+    await heroku.runAppCommand(app.id, 'node bin/setdomain.js');
+    appUrl = `http://${appName}.readme.ninja`;
+  }
+
+  core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
+  await comments.postCreateComment(appName, appUrl, message);
   return true;
 }
 
-module.exports = updateController;
+module.exports = upsertController;
 
 
 /***/ }),
@@ -9170,7 +9202,7 @@ module.exports.initializeCredentials = function () {
 
   HEROKU_API_KEY = core.getInput('heroku_api_key', { required: true });
   if (!/^[a-f0-9-]+$/.test(HEROKU_API_KEY)) {
-    throw new Error(`Invalid heroku_api_key value (redacted)`);
+    throw new Error('Invalid heroku_api_key value (redacted)');
   }
   core.setSecret(HEROKU_API_KEY);
 };
@@ -9207,6 +9239,14 @@ module.exports.getPipelineId = async function (pipelineName) {
 /* Loads all of the config vars for the given pipeline's "Review Apps" stage. */
 module.exports.getPipelineVars = async function (pipelineId) {
   return herokuGet(`https://api.heroku.com/pipelines/${pipelineId}/stage/review/config-vars`);
+};
+
+/*
+ * Returns the IDs of all apps coupled to the given pipeline.
+ */
+module.exports.getPipelineApps = async function (pipelineId) {
+  const resp = await herokuGet(`https://api.heroku.com/pipelines/${pipelineId}/pipeline-couplings`);
+  return resp.map(coupling => coupling.app.id);
 };
 
 /*
@@ -9305,6 +9345,14 @@ module.exports.setAppVars = async function (appId, vars) {
 };
 
 /*
+ * Returns a list of log drain URLs on the given app.
+ */
+module.exports.getDrains = async function (appId) {
+  const resp = await herokuGet(`https://api.heroku.com/apps/${appId}/log-drains`);
+  return resp.map(drain => drain.url);
+};
+
+/*
  * Adds a log drain to the given app
  */
 module.exports.addDrain = async function (appId, url) {
@@ -9332,13 +9380,12 @@ module.exports.runAppCommand = async function (appId, command) {
 /***/ 1713:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const createController = __nccwpck_require__(7158);
-const deleteController = __nccwpck_require__(5839);
 const core = __nccwpck_require__(2186);
+const deleteController = __nccwpck_require__(5839);
 const git = __nccwpck_require__(109);
 const github = __nccwpck_require__(5438);
 const heroku = __nccwpck_require__(7213);
-const updateController = __nccwpck_require__(2477);
+const upsertController = __nccwpck_require__(786);
 
 /*
  * Loads common parameters used by all the controllers.
@@ -9409,16 +9456,14 @@ async function main() {
     switch (github.context.payload.action) {
       case 'opened':
       case 'reopened':
-        await createController(params);
-        break;
       case 'synchronize':
-        await updateController(params);
+        await upsertController(params);
         break;
       case 'closed':
         await deleteController(params);
         break;
       default:
-        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to GitHub`);
+        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
         break;
     }
   } catch (error) {
