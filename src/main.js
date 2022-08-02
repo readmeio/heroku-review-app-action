@@ -1,10 +1,9 @@
-const createController = require('./controllers/create');
+const pushController = require('./controllers/push');
 const deleteController = require('./controllers/delete');
 const core = require('@actions/core');
 const git = require('./git');
 const github = require('@actions/github');
 const heroku = require('./heroku');
-const updateController = require('./controllers/update');
 
 /*
  * Loads common parameters used by all the controllers.
@@ -75,10 +74,8 @@ async function main() {
     switch (github.context.payload.action) {
       case 'opened':
       case 'reopened':
-        await createController(params);
-        break;
       case 'synchronize':
-        await updateController(params);
+        await pushController(params);
         break;
       case 'closed':
         await deleteController(params);
