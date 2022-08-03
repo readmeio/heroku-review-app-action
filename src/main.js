@@ -1,9 +1,9 @@
-const pushController = require('./controllers/push');
-const deleteController = require('./controllers/delete');
 const core = require('@actions/core');
+const deleteController = require('./controllers/delete');
 const git = require('./git');
 const github = require('@actions/github');
 const heroku = require('./heroku');
+const upsertController = require('./controllers/upsert');
 
 /*
  * Loads common parameters used by all the controllers.
@@ -75,13 +75,13 @@ async function main() {
       case 'opened':
       case 'reopened':
       case 'synchronize':
-        await pushController(params);
+        await upsertController(params);
         break;
       case 'closed':
         await deleteController(params);
         break;
       default:
-        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to GitHub`);
+        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
         break;
     }
   } catch (error) {

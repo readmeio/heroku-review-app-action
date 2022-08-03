@@ -8964,7 +8964,7 @@ module.exports = deleteController;
 
 /***/ }),
 
-/***/ 7842:
+/***/ 786:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const comments = __nccwpck_require__(4975);
@@ -8972,7 +8972,7 @@ const core = __nccwpck_require__(2186);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
-async function pushController(params) {
+async function upsertController(params) {
   const { pipelineName, pipelineId, logDrainUrl, appName, refName } = params;
 
   if (!git.refExists(refName)) {
@@ -9059,7 +9059,7 @@ async function pushController(params) {
   return true;
 }
 
-module.exports = pushController;
+module.exports = upsertController;
 
 
 /***/ }),
@@ -9380,12 +9380,12 @@ module.exports.runAppCommand = async function (appId, command) {
 /***/ 1713:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const pushController = __nccwpck_require__(7842);
-const deleteController = __nccwpck_require__(5839);
 const core = __nccwpck_require__(2186);
+const deleteController = __nccwpck_require__(5839);
 const git = __nccwpck_require__(109);
 const github = __nccwpck_require__(5438);
 const heroku = __nccwpck_require__(7213);
+const upsertController = __nccwpck_require__(786);
 
 /*
  * Loads common parameters used by all the controllers.
@@ -9457,13 +9457,13 @@ async function main() {
       case 'opened':
       case 'reopened':
       case 'synchronize':
-        await pushController(params);
+        await upsertController(params);
         break;
       case 'closed':
         await deleteController(params);
         break;
       default:
-        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to GitHub`);
+        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
         break;
     }
   } catch (error) {

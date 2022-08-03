@@ -3,7 +3,7 @@ const core = require('@actions/core');
 const git = require('../git');
 const heroku = require('../heroku');
 
-async function pushController(params) {
+async function upsertController(params) {
   const { pipelineName, pipelineId, logDrainUrl, appName, refName } = params;
 
   if (!git.refExists(refName)) {
@@ -90,4 +90,4 @@ async function pushController(params) {
   return true;
 }
 
-module.exports = pushController;
+module.exports = upsertController;
