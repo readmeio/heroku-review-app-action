@@ -16,6 +16,16 @@ inputs:
   github_token:
     description: 'GITHUB_TOKEN or a repo scoped PAT.'
     default: ${{ github.token }}
+  heroku_region:
+    description: 'Region to deploy newly-created apps'
+    default: us
+  heroku_stack:
+    description: 'Name or identifier of Heroku stack to deploy on.'
+    # heroku-20 is the stack used by readmeio, so it's safe for us to use internally
+    default: heroku-20
+  heroku_team:
+    description: 'Name of the team that will own the new Heroku app.'
+    default: readme
 outputs:
   comment:
     description: "A comment which can be posted to the pull request after the action finishes."

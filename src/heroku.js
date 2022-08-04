@@ -92,6 +92,14 @@ module.exports.getPipelineVars = async function (pipelineId) {
 };
 
 /*
+ * Returns the IDs of all apps coupled to the given pipeline.
+ */
+module.exports.getPipelineApps = async function (pipelineId) {
+  const resp = await herokuGet(`https://api.heroku.com/pipelines/${pipelineId}/pipeline-couplings`);
+  return resp.map(coupling => coupling.app.id);
+};
+
+/*
  * Loads the review app configuration for the given pipeline. Returns
  * undefined if the pipeline does not have review apps configured.
  */
@@ -126,10 +134,14 @@ module.exports.appExists = async function (appName) {
 
 /* Creates a Heroku app with the given name. */
 module.exports.createApp = async function (name) {
+  const region = core.getInput('heroku_region', { required: true });
+  const stack = core.getInput('heroku_stack', { required: true });
+  const team = core.getInput('heroku_team', { required: true });
+
   const resp = await herokuFetch('https://api.heroku.com/teams/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, region: 'us', team: 'readme' }),
+    body: JSON.stringify({ name, region, stack, team }),
   });
   return resp.json();
 };
@@ -184,6 +196,14 @@ module.exports.setAppVars = async function (appId, vars) {
     body: JSON.stringify(vars),
   });
   return resp.json();
+};
+
+/*
+ * Returns a list of log drain URLs on the given app.
+ */
+module.exports.getDrains = async function (appId) {
+  const resp = await herokuGet(`https://api.heroku.com/apps/${appId}/log-drains`);
+  return resp.map(drain => drain.url);
 };
 
 /*
