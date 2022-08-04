@@ -9,6 +9,7 @@ async function upsertController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
+  const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
   const message = git.messageForRef(refName);
   const configVars = await heroku.getPipelineVars(pipelineId);
 
@@ -86,12 +87,7 @@ async function upsertController(params) {
   }
 
   core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  if (appAlreadyExists) {
-    const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
-    await comments.postUpdateComment(appName, appUrl, sha, message);
-  } else {
-    await comments.postCreateComment(appName, appUrl, message);
-  }
+  await comments.postUpsertComment(appName, appUrl, sha, message);
   return true;
 }
 
