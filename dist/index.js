@@ -8994,9 +8994,9 @@ async function upsertController(params) {
 
   let currentStep = 1;
   core.info(`\n[Step ${currentStep}/${stepCount}] Creating Heroku app "${appName}" if it doesn't already exist...`);
-  const appExists = await heroku.appExists(appName);
+  const appAlreadyExists = await heroku.appExists(appName);
   let app;
-  if (appExists) {
+  if (appAlreadyExists) {
     core.info('  - The app already exists, skipping this step.');
     app = await heroku.getApp(appName);
   } else {
@@ -9022,7 +9022,7 @@ async function upsertController(params) {
   if (Object.keys(configVars).length > 0) {
     currentStep += 1;
     core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
-    if (appExists) {
+    if (appAlreadyExists) {
       core.info('  - Note: This will reset any config vars that you have changed on this app.');
     }
     await heroku.setAppVars(app.id, configVars);
@@ -9055,7 +9055,12 @@ async function upsertController(params) {
   }
 
   core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postCreateComment(appName, appUrl, message);
+  if (appAlreadyExists) {
+    const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
+    await comments.postUpdateComment(appName, appUrl, sha, message);
+  } else {
+    await comments.postCreateComment(appName, appUrl, message);
+  }
   return true;
 }
 
