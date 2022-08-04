@@ -9,6 +9,9 @@ const SAMPLE_DRAIN_URL = 'https://logs.example.com/my-log-drain';
 const SAMPLE_PIPELINE_ID = '12121212-3434-5656-7878-909090909090';
 const SAMPLE_PIPELINE_NAME = 'aqueduct';
 const SAMPLE_RESPONSE = { response_field: 'response_value' };
+const SAMPLE_REGION = 'eu';
+const SAMPLE_STACK = 'heroku-22';
+const SAMPLE_TEAM = 'owlbert';
 
 describe('#src/heroku', () => {
   beforeAll(() => {
@@ -41,6 +44,20 @@ describe('#src/heroku', () => {
       it('should return undefined if the pipeline does not exist', async () => {
         nock('https://api.heroku.com').get(`/pipelines/${SAMPLE_PIPELINE_NAME}`).reply(404);
         await expect(heroku.getPipelineId(SAMPLE_PIPELINE_NAME)).resolves.toBeUndefined();
+      });
+    });
+
+    describe('getPipelineApps()', () => {
+      it('should return a list of UUIDs for apps in the given pipeline', async () => {
+        nock('https://api.heroku.com')
+          .get(`/pipelines/${SAMPLE_PIPELINE_NAME}/pipeline-couplings`)
+          .reply(200, [{ app: { id: SAMPLE_PIPELINE_ID } }]);
+        await expect(heroku.getPipelineApps(SAMPLE_PIPELINE_NAME)).resolves.toStrictEqual([SAMPLE_PIPELINE_ID]);
+      });
+
+      it('should throw an error if the given pipeline does not exist', async () => {
+        nock('https://api.heroku.com').get(`/pipelines/${SAMPLE_PIPELINE_NAME}/pipeline-couplings`).reply(404);
+        await expect(heroku.getPipelineApps(SAMPLE_PIPELINE_NAME)).rejects.toThrow(/404/);
       });
     });
 
@@ -83,13 +100,39 @@ describe('#src/heroku', () => {
         await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(false);
       });
     });
+
+    describe('getDrains()', () => {
+      it('should return the log drain(s) attached to the given app', async () => {
+        nock('https://api.heroku.com')
+          .get(`/apps/${SAMPLE_APP_ID}/log-drains`)
+          .reply(200, [{ url: SAMPLE_DRAIN_URL }]);
+        await expect(heroku.getDrains(SAMPLE_APP_ID)).resolves.toStrictEqual([SAMPLE_DRAIN_URL]);
+      });
+
+      it('should throw an error if the pipeline does not exist', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_ID}/log-drains`).reply(404);
+        await expect(heroku.getDrains(SAMPLE_APP_ID)).rejects.toThrow(/404/);
+      });
+    });
   });
 
   describe('Heroku API write functions', () => {
     describe('createApp()', () => {
+      beforeAll(() => {
+        process.env.INPUT_HEROKU_REGION = SAMPLE_REGION;
+        process.env.INPUT_HEROKU_STACK = SAMPLE_STACK;
+        process.env.INPUT_HEROKU_TEAM = SAMPLE_TEAM;
+      });
+
+      afterAll(() => {
+        delete process.env.INPUT_HEROKU_REGION;
+        delete process.env.INPUT_HEROKU_STACK;
+        delete process.env.INPUT_HEROKU_TEAM;
+      });
+
       it('should POST to the correct endpoint to create an app', async () => {
         nock('https://api.heroku.com')
-          .post('/teams/apps', { name: SAMPLE_APP_NAME, region: 'us', team: 'readme' })
+          .post('/teams/apps', { name: SAMPLE_APP_NAME, region: SAMPLE_REGION, stack: SAMPLE_STACK, team: SAMPLE_TEAM })
           .reply(200, SAMPLE_RESPONSE);
         await expect(heroku.createApp(SAMPLE_APP_NAME)).resolves.toStrictEqual(SAMPLE_RESPONSE);
       });
