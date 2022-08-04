@@ -1,3 +1,4 @@
+const comments = require('./comments');
 const core = require('@actions/core');
 const deleteController = require('./controllers/delete');
 const git = require('./git');
@@ -71,21 +72,27 @@ async function main() {
     core.info(`  - Review app base name: ${baseName}`);
     core.info(`  - Heroku app name: ${appName}`);
 
-    switch (github.context.payload.action) {
-      case 'opened':
-      case 'reopened':
-      case 'synchronize':
-        await upsertController(params);
-        break;
-      case 'closed':
-        await deleteController(params);
-        break;
-      default:
-        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
-        break;
+    try {
+      switch (github.context.payload.action) {
+        case 'opened':
+        case 'reopened':
+        case 'synchronize':
+          await upsertController(params);
+          break;
+        case 'closed':
+          await deleteController(params);
+          break;
+        default:
+          core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
+          break;
+      }
+    } catch (err) {
+      comments.postErrorComment(params);
+      throw err;
     }
-  } catch (error) {
-    core.setFailed(error.message);
+  } catch (err) {
+    core.setFailed(err.message);
+    throw err;
   }
 }
 

@@ -8770,6 +8770,8 @@ const core = __nccwpck_require__(2186);
 const github = __nccwpck_require__(5438);
 
 const owlbert = 'https://user-images.githubusercontent.com/313895/167224035-b34efcd6-854e-4cb4-92bd-10d717d2a6b1.png';
+const sadOwlbert =
+  'https://user-images.githubusercontent.com/313895/182944177-50af1d9c-8b6d-47b1-aa84-7b7019637bf9.png';
 
 function getFormattedDate() {
   const options = { weekday: 'short', year: undefined, month: 'short', day: 'numeric', timeZone: 'America/New_York' };
@@ -8876,24 +8878,24 @@ async function updateComment(commentId, body) {
 /*
  * Entrypoint to post a new PR comment when we open a new review app.
  */
-module.exports.postCreateComment = async function (appName, appUrl) {
+async function postCreateComment(appName, appUrl) {
   const dashboardUrl = `https://dashboard.heroku.com/apps/${appName}`;
   const img = `<a href="${appUrl}"><img align="right" height="100" src="${owlbert}" /></a>`;
   const links = `:mag: **Inspect the app:** ${dashboardUrl}\n\n:compass: **Take it for a spin:** ${appUrl}`;
 
   const comment = `## A review app has been launched for this PR! ${img}\n\n${links}\n`;
   return createComment(comment);
-};
+}
 
 /*
  * Entrypoint to update the existing PR comment, appending a bullet that we've
  * redeployed the review app. If this can't find an existing PR comment, it will
  * create a new comment instead.
  */
-module.exports.postUpdateComment = async function (appName, appUrl, sha, message) {
+module.exports.postUpsertComment = async function (appName, appUrl, sha, message) {
   const comment = await findExistingComment();
   if (!comment) {
-    return module.exports.postCreateComment(appName, appUrl);
+    return postCreateComment(appName, appUrl);
   }
 
   const owner = github.context.payload.repository.owner.login;
@@ -8922,6 +8924,22 @@ module.exports.postDeleteComment = async function () {
   const date = getFormattedDate();
   const body = `${comment.body}\n- **Shut down on ${date}:** Since this PR is closed, its review app has been cleaned up. :sponge:`;
   return updateComment(comment.id, body);
+};
+
+module.exports.postErrorComment = async function (params) {
+  const owner = github.context.payload.repository.owner.login;
+  const repo = github.context.payload.repository.name;
+  const runId = github.context.runId;
+
+  const actionUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+  const dashboardUrl = `https://dashboard.heroku.com/apps/${params.appName}`;
+  const runDescription = `${github.context.workflow} #${github.context.runNumber}`;
+
+  const img = `<a href="${actionUrl}"><img align="right" height="100" src="${sadOwlbert}" /></a>`;
+  const links = `:page_facing_up: **Review the GitHub Action logs:** ${actionUrl}\n\n:mag: **Inspect the app in Heroku:** ${dashboardUrl}`;
+
+  const comment = `## Something went wrong: this review app couldn‘t be deployed to Heroku. ${img}\n\n${runDescription} failed.\n\n${links}\n`;
+  return createComment(comment);
 };
 
 
@@ -8978,6 +8996,7 @@ async function upsertController(params) {
   if (!git.refExists(refName)) {
     throw new Error(`Ref "${refName}" does not exist.`);
   }
+  const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
   const message = git.messageForRef(refName);
   const configVars = await heroku.getPipelineVars(pipelineId);
 
@@ -9055,12 +9074,7 @@ async function upsertController(params) {
   }
 
   core.info(`\nSuccessfully created Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  if (appAlreadyExists) {
-    const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
-    await comments.postUpdateComment(appName, appUrl, sha, message);
-  } else {
-    await comments.postCreateComment(appName, appUrl, message);
-  }
+  await comments.postUpsertComment(appName, appUrl, sha, message);
   return true;
 }
 
@@ -9389,6 +9403,7 @@ module.exports.runAppCommand = async function (appId, command) {
 /***/ 1713:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
 const deleteController = __nccwpck_require__(5839);
 const git = __nccwpck_require__(109);
@@ -9462,21 +9477,27 @@ async function main() {
     core.info(`  - Review app base name: ${baseName}`);
     core.info(`  - Heroku app name: ${appName}`);
 
-    switch (github.context.payload.action) {
-      case 'opened':
-      case 'reopened':
-      case 'synchronize':
-        await upsertController(params);
-        break;
-      case 'closed':
-        await deleteController(params);
-        break;
-      default:
-        core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
-        break;
+    try {
+      switch (github.context.payload.action) {
+        case 'opened':
+        case 'reopened':
+        case 'synchronize':
+          await upsertController(params);
+          break;
+        case 'closed':
+          await deleteController(params);
+          break;
+        default:
+          core.warning(`Unexpected PR action "${github.context.payload.action}", not pushing any changes to Heroku`);
+          break;
+      }
+    } catch (err) {
+      comments.postErrorComment(params);
+      throw err;
     }
-  } catch (error) {
-    core.setFailed(error.message);
+  } catch (err) {
+    core.setFailed(err.message);
+    throw err;
   }
 }
 
