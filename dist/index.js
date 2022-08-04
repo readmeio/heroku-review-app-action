@@ -9284,10 +9284,14 @@ module.exports.appExists = async function (appName) {
 
 /* Creates a Heroku app with the given name. */
 module.exports.createApp = async function (name) {
+  const region = core.getInput('heroku_region', { required: true });
+  const stack = core.getInput('heroku_stack', { required: true });
+  const team = core.getInput('heroku_team', { required: true });
+
   const resp = await herokuFetch('https://api.heroku.com/teams/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, region: 'us', team: 'readme' }),
+    body: JSON.stringify({ name, region, stack, team }),
   });
   return resp.json();
 };
