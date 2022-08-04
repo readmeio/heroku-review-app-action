@@ -34,7 +34,16 @@ jobs:
 
       - run:
           name: Building with ncc
-          command: npm run build
+          command: |
+            mv dist/index.js dist/index.js.orig
+            npm run build
+            ORIGINAL_BUILD_CHECKSUM="$(cat dist/index.js.orig | md5sum)"
+            NEW_BUILD_CHECKSUM="$(cat dist/index.js | md5sum)"
+            if [ "${ORIGINAL_BUILD_CHECKSUM}" != "${NEW_BUILD_CHECKSUM}" ]; then
+              echo "Warning: ncc build doesn't match what's checked into dist/index.js."
+              echo "Did you forget to 'npm run build' on this branch?"
+              exit 1
+            fi
 
       - run:
           name: Running unit tests
