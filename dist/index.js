@@ -9492,7 +9492,7 @@ async function main() {
           break;
       }
     } catch (err) {
-      comments.postErrorComment(params);
+      await comments.postErrorComment(params);
       throw err;
     }
   } catch (err) {
