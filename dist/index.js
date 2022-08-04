@@ -8938,7 +8938,7 @@ module.exports.postErrorComment = async function (params) {
   const img = `<a href="${actionUrl}"><img align="right" height="100" src="${sadOwlbert}" /></a>`;
   const links = `:page_facing_up: **Review the GitHub Action logs:** ${actionUrl}\n\n:mag: **Inspect the app in Heroku:** ${dashboardUrl}`;
 
-  const comment = `## Something went wrong: this review app couldn‘t be deployed to Heroku. ${img}\n\n${runDescription} failed.\n\n${links}\n`;
+  const comment = `## :warning: There was a problem deploying this review app to Heroku. ${img}\n\n${runDescription} failed.\n\n${links}\n`;
   return createComment(comment);
 };
 
