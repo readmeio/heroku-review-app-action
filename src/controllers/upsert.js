@@ -1,5 +1,6 @@
-const comments = require('../comments');
 const core = require('@actions/core');
+
+const comments = require('../comments');
 const git = require('../git');
 const heroku = require('../heroku');
 

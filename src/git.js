@@ -1,7 +1,8 @@
 const childProcess = require('child_process');
-const core = require('@actions/core');
 const fs = require('fs');
 const path = require('path');
+
+const core = require('@actions/core');
 
 /*
  * Wrapper to run an arbitrary git command

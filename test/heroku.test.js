@@ -1,5 +1,6 @@
-const heroku = require('../src/heroku');
 const nock = require('nock');
+
+const heroku = require('../src/heroku');
 
 const SAMPLE_APP_ID = '33333333-4444-5555-6666-777777777777';
 const SAMPLE_APP_NAME = 'dr-owlbert-pr-1234';
