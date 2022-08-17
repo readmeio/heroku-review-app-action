@@ -1,10 +1,11 @@
-const comments = require('./comments');
 const core = require('@actions/core');
-const deleteController = require('./controllers/delete');
-const git = require('./git');
 const github = require('@actions/github');
-const heroku = require('./heroku');
+
+const comments = require('./comments');
+const deleteController = require('./controllers/delete');
 const upsertController = require('./controllers/upsert');
+const git = require('./git');
+const heroku = require('./heroku');
 
 /*
  * Loads common parameters used by all the controllers.

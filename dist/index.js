@@ -8948,8 +8948,9 @@ module.exports.postErrorComment = async function (params) {
 /***/ 5839:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
+
+const comments = __nccwpck_require__(4975);
 const heroku = __nccwpck_require__(7213);
 
 async function deleteController(params) {
@@ -8985,8 +8986,9 @@ module.exports = deleteController;
 /***/ 786:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
+
+const comments = __nccwpck_require__(4975);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
@@ -9087,9 +9089,10 @@ module.exports = upsertController;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const childProcess = __nccwpck_require__(2081);
-const core = __nccwpck_require__(2186);
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
+
+const core = __nccwpck_require__(2186);
 
 /*
  * Wrapper to run an arbitrary git command
@@ -9403,13 +9406,14 @@ module.exports.runAppCommand = async function (appId, command) {
 /***/ 1713:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const comments = __nccwpck_require__(4975);
 const core = __nccwpck_require__(2186);
-const deleteController = __nccwpck_require__(5839);
-const git = __nccwpck_require__(109);
 const github = __nccwpck_require__(5438);
-const heroku = __nccwpck_require__(7213);
+
+const comments = __nccwpck_require__(4975);
+const deleteController = __nccwpck_require__(5839);
 const upsertController = __nccwpck_require__(786);
+const git = __nccwpck_require__(109);
+const heroku = __nccwpck_require__(7213);
 
 /*
  * Loads common parameters used by all the controllers.
