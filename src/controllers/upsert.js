@@ -106,7 +106,7 @@ async function upsertController(params) {
     await deployDocker(appName, configVars.NODE_ENV);
   } else {
     const stack = core.getInput('heroku_stack', { required: true });
-    core.info(`[Step ${currentStep}/${stepCount}] Setting the Herkou stack to ${stack}...`);
+    core.info(`[Step ${currentStep}/${stepCount}] Setting the Heroku stack to ${stack}...`);
     if (app.stack.name !== stack) {
       await heroku.setAppStack(app.id, stack);
     } else {
