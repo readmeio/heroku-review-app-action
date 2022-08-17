@@ -5,8 +5,8 @@ const fetch = require('node-fetch');
 let CIRCLECI_API_TOKEN;
 
 const BASE_URL = 'https://circleci.com/api/v2';
-const POLLING_SLEEP_MS = 10000; // 10 seconds
-const POLLING_TIMEOUT_MS = 60 * 30 * 1000; // 30 minutes
+const POLLING_SLEEP_MS = process.env.NODE_ENV === 'test' ? 30 : 10 * 1000; // 10 seconds
+const POLLING_TIMEOUT_MS = process.env.NODE_ENV === 'test' ? 300 : 60 * 30 * 1000; // 30 minutes
 
 ///
 /// Helper Functions
@@ -97,7 +97,7 @@ async function getPipelineWorkflow(pipelineId) {
     // this pipeline. This is unlikely to happen during this GitHub Action but
     // could happen in situations like re-running the pipeline after an error.
     // We should make sure that items[0] contains the most recent run.
-    resp.items.sort((a, b) => b.localeCompare(a));
+    resp.items.sort((a, b) => b.created_at.localeCompare(a.created_at));
   }
   return resp.items[0];
 }

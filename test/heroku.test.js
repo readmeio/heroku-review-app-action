@@ -168,6 +168,15 @@ describe('#src/heroku', () => {
       });
     });
 
+    describe('setAppStack()', () => {
+      it('should PATCH to the correct endpoint to switch to the given stack', async () => {
+        nock('https://api.heroku.com')
+          .patch(`/apps/${SAMPLE_APP_ID}`, { build_stack: SAMPLE_STACK })
+          .reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.setAppStack(SAMPLE_APP_ID, SAMPLE_STACK)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+      });
+    });
+
     describe('setAppVars()', () => {
       it('should PATCH to the correct endpoint to update config vars', async () => {
         nock('https://api.heroku.com')
