@@ -1,6 +1,7 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
 
+const circleci = require('./circleci');
 const comments = require('./comments');
 const deleteController = require('./controllers/delete');
 const upsertController = require('./controllers/upsert');
@@ -28,11 +29,10 @@ async function getParams() {
   }
 
   let baseName;
-  if (pipelineName === 'readme' && prNumber < 7100 && prNumber !== 7050) {
+  if (pipelineName === 'readme' && prNumber < 7100) {
     // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100.
-    // We need to hardcode a workaround for PRs opened before that. However
-    // we manually renamed Gabe's PR #7050 thinking that was a good solution,
-    // so the workaround doesn't apply to #7050.
+    // We need to hardcode a workaround for PRs opened before that.
+    // @todo remove this once all PRs below #7100 have been closed.
     baseName = 'readme-stage';
   } else {
     const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
@@ -45,13 +45,27 @@ async function getParams() {
 
   const appName = `${baseName}-pr-${prNumber}`;
 
+  // The git repo checkout and refName parameter aren't strictly necessary for
+  // Docker builds, but they're both used by upsertController to write the pull
+  // request comment, so we'll check the repo and set refName even for Docker.
+
   if (!git.repoExists()) {
     throw new Error(`Current working directory "${process.cwd()}" is not a Git repo`);
   }
 
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  return { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName };
+  let useDocker = false;
+  const dockerParam = core.getInput('docker', { required: false });
+  if (dockerParam && dockerParam.length > 0) {
+    if (dockerParam === 'true') {
+      useDocker = true;
+    } else if (dockerParam !== 'false') {
+      throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
+    }
+  }
+
+  return { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName, useDocker };
 }
 
 /*
@@ -62,10 +76,15 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName } = params;
+    const { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName, useDocker } = params;
+
+    if (params.useDocker) {
+      circleci.initializeCredentials();
+    }
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
+    core.info(`  - Build type: ${useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
     core.info(`  - Git ref: ${refName}`);
     core.info(`  - Heroku pipeline name: ${pipelineName}`);
     core.info(`  - Heroku pipeline ID: ${pipelineId}`);

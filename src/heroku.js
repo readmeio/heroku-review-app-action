@@ -173,6 +173,20 @@ module.exports.coupleAppToPipeline = async function (appId, pipelineId) {
 };
 
 /*
+ * Changes the Heroku stack (application execution environments) to the one in
+ * the input parameters. Not relevant for Docker image-based deploys; stack will
+ * reset to "container" when a Docker image is released to the app.
+ */
+module.exports.setAppStack = async function (appId, stack) {
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ build_stack: stack }),
+  });
+  return resp.json();
+};
+
+/*
  * Enables or disables a given Heroku Labs feature.
  */
 module.exports.setAppFeature = async function (appId, featureName, enabled) {
