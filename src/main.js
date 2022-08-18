@@ -32,6 +32,8 @@ async function getParams() {
 
   const appName = `${baseName}-pr-${prNumber}`;
 
+  const logDrainUrl = core.getInput('log_drain_url', { required: false });
+
   // The git repo checkout and refName parameter aren't strictly necessary for
   // Docker builds, but they're both used by upsertController to write the pull
   // request comment, so we'll check the repo and set refName even for Docker.
@@ -52,7 +54,7 @@ async function getParams() {
     }
   }
 
-  return { pipelineName, appName, refName, useDocker };
+  return { pipelineName, appName, logDrainUrl, refName, useDocker };
 }
 
 /*

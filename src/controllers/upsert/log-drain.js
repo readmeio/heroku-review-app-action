@@ -1,5 +1,3 @@
-const core = require('@actions/core');
-
 const heroku = require('../../heroku');
 
 class LogDrainStep {
@@ -10,9 +8,7 @@ class LogDrainStep {
   }
 
   async checkPrereqs() {
-    this.logDrainUrl = core.getInput('log_drain_url', { required: false });
-
-    if (!this.logDrainUrl) {
+    if (!this.params.logDrainUrl) {
       this.shouldRun = false;
       return;
     }

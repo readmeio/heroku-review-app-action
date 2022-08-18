@@ -54,21 +54,11 @@ describe('#src/controllers/upsert/heroku-labs', () => {
       heroku.setAppFeature = jest.fn();
 
       const step = new HerokuLabsStep({ appName: SAMPLE_APP_NAME, pipelineName: SAMPLE_PIPELINE_NAME });
-      await expect(step.run()).resolves;
-      expect(heroku.setAppFeature.mock.calls.length).toBe(3);
-      expect(heroku.setAppFeature.mock.calls[0][0]).toBe(SAMPLE_APP_ID);
-      expect(heroku.setAppFeature.mock.calls[1][0]).toBe(SAMPLE_APP_ID);
-      expect(heroku.setAppFeature.mock.calls[2][0]).toBe(SAMPLE_APP_ID);
-
-      // The features are all set concurrently so they could run in any order;
-      // our check needs to account for that.
-      const features = [
-        heroku.setAppFeature.mock.calls[0][1],
-        heroku.setAppFeature.mock.calls[1][1],
-        heroku.setAppFeature.mock.calls[2][1],
-      ];
-      features.sort();
-      expect(features).toStrictEqual(['nodejs-language-metrics', 'runtime-dyno-metadata', 'runtime-heroku-metrics']);
+      await step.run();
+      expect(heroku.setAppFeature).toHaveBeenCalledTimes(3);
+      expect(heroku.setAppFeature).toHaveBeenCalledWith(SAMPLE_APP_ID, 'nodejs-language-metrics', true);
+      expect(heroku.setAppFeature).toHaveBeenCalledWith(SAMPLE_APP_ID, 'runtime-dyno-metadata', true);
+      expect(heroku.setAppFeature).toHaveBeenCalledWith(SAMPLE_APP_ID, 'runtime-heroku-metrics', true);
     });
   });
 });

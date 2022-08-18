@@ -1,3 +1,5 @@
+const nock = require('nock');
+
 const ConfigVarsStep = require('../../../src/controllers/upsert/config-vars');
 const heroku = require('../../../src/heroku');
 
@@ -5,10 +7,17 @@ const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_PIPELINE_ID = '22222222-3333-4444-5555-666666666666';
 const SAMPLE_APP_NAME = 'owlzilla';
 const SAMPLE_PIPELINE_NAME = 'owlpipeline';
-const SAMPLE_RESPONSE = { response_field: 'response_value' };
 const SAMPLE_CONFIG_VARS = { VAR1: 'value1', VAR2: 'value2' };
 
 describe('#src/controllers/upsert/config-vars', () => {
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
+  afterAll(() => {
+    nock.enableNetConnect();
+  });
+
   afterEach(jest.restoreAllMocks);
 
   describe('checkPrereqs()', () => {
@@ -40,10 +49,9 @@ describe('#src/controllers/upsert/config-vars', () => {
 
       const step = new ConfigVarsStep({ appName: SAMPLE_APP_NAME, pipelineName: SAMPLE_PIPELINE_NAME });
       step.configVars = SAMPLE_CONFIG_VARS;
-      await expect(step.run()).resolves;
-      expect(heroku.setAppVars.mock.calls.length).toBe(1);
-      expect(heroku.setAppVars.mock.calls[0][0]).toBe(SAMPLE_APP_ID);
-      expect(heroku.setAppVars.mock.calls[0][1]).toBe(SAMPLE_CONFIG_VARS);
+      await step.run();
+      expect(heroku.setAppVars).toHaveBeenCalledTimes(1);
+      expect(heroku.setAppVars).toHaveBeenCalledWith(SAMPLE_APP_ID, SAMPLE_CONFIG_VARS);
     });
   });
 });

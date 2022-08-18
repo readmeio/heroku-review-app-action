@@ -1,11 +1,20 @@
+const nock = require('nock');
+
 const SetDomainStep = require('../../../src/controllers/upsert/set-domain');
 const heroku = require('../../../src/heroku');
 
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_APP_NAME = 'owlzilla';
-const SAMPLE_RESPONSE = { response_field: 'response_value' };
 
 describe('#src/controllers/upsert/set-domain', () => {
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
+  afterAll(() => {
+    nock.enableNetConnect();
+  });
+
   afterEach(jest.restoreAllMocks);
 
   describe('checkPrereqs()', () => {
@@ -28,10 +37,9 @@ describe('#src/controllers/upsert/set-domain', () => {
       heroku.runAppCommand = jest.fn();
 
       const step = new SetDomainStep({ appName: SAMPLE_APP_NAME, pipelineName: 'readme' });
-      await expect(step.run()).resolves;
-      expect(heroku.runAppCommand.mock.calls.length).toBe(1);
-      expect(heroku.runAppCommand.mock.calls[0][0]).toBe(SAMPLE_APP_ID);
-      expect(heroku.runAppCommand.mock.calls[0][1]).toBe('node bin/setdomain.js');
+      await step.run();
+      expect(heroku.runAppCommand).toHaveBeenCalledTimes(1);
+      expect(heroku.runAppCommand).toHaveBeenCalledWith(SAMPLE_APP_ID, 'node bin/setdomain.js');
     });
   });
 });
