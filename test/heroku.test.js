@@ -47,7 +47,7 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe.skip('getAppFeature()', () => {
+    describe('getAppFeature()', () => {
       it('should return the configuration of the given app', async () => {
         nock('https://api.heroku.com')
           .get(`/apps/${SAMPLE_APP_NAME}/features/${SAMPLE_FEATURE}`)
@@ -61,7 +61,7 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe.skip('getPipelineId()', () => {
+    describe('getPipelineId()', () => {
       it('should return the UUID of the given pipeline', async () => {
         nock('https://api.heroku.com').get(`/pipelines/${SAMPLE_PIPELINE_NAME}`).reply(200, { id: SAMPLE_PIPELINE_ID });
         await expect(heroku.getPipelineId(SAMPLE_PIPELINE_NAME)).resolves.toBe(SAMPLE_PIPELINE_ID);
@@ -73,7 +73,7 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe.skip('getPipelineApps()', () => {
+    describe('getPipelineApps()', () => {
       it('should return a list of UUIDs for apps in the given pipeline', async () => {
         nock('https://api.heroku.com')
           .get(`/pipelines/${SAMPLE_PIPELINE_NAME}/pipeline-couplings`)
@@ -87,7 +87,7 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe.skip('getPipelineVars()', () => {
+    describe('getPipelineVars()', () => {
       it('should return the config vars for the given pipeline', async () => {
         nock('https://api.heroku.com')
           .get(`/pipelines/${SAMPLE_PIPELINE_NAME}/stage/review/config-vars`)
@@ -101,7 +101,7 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe.skip('getReviewAppConfig()', () => {
+    describe('getReviewAppConfig()', () => {
       it('should return the review app configuration for the given pipeline', async () => {
         nock('https://api.heroku.com')
           .get(`/pipelines/${SAMPLE_PIPELINE_NAME}/review-app-config`)
@@ -152,7 +152,7 @@ describe('#src/heroku', () => {
       });
     });
 
-    describe.skip('getDrains()', () => {
+    describe('getDrains()', () => {
       it('should return the log drain(s) attached to the given app', async () => {
         nock('https://api.heroku.com')
           .get(`/apps/${SAMPLE_APP_ID}/log-drains`)
@@ -167,7 +167,7 @@ describe('#src/heroku', () => {
     });
   });
 
-  describe.skip('Heroku API write functions', () => {
+  describe('Heroku API write functions', () => {
     describe('createApp()', () => {
       it('should POST to the correct endpoint to create an app', async () => {
         nock('https://api.heroku.com')
