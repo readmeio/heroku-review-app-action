@@ -26,7 +26,7 @@ async function getStepsForThisRun(steps) {
 }
 
 async function runSteps(queue) {
-  const stepCount = queue.length + 1;
+  const stepCount = queue.length;
   for (let i = 0; i < queue.length; i += 1) {
     const number = i + 1;
     core.info(`[Step ${number}/${stepCount}] ${queue[i].title}...`);
