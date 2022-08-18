@@ -1,10 +1,9 @@
 const heroku = require('../../heroku');
+const Step = require('../step');
 
-class HerokuLabsStep {
+class HerokuLabsStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Enabling Heroku Labs features';
+    super('Enabling Heroku Labs features', params);
   }
 
   async checkPrereqs() {

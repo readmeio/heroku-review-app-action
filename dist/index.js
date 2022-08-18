@@ -9115,18 +9115,43 @@ module.exports = deleteController;
 
 /***/ }),
 
+/***/ 9536:
+/***/ ((module) => {
+
+class Step {
+  constructor(title, params) {
+    this.title = title;
+    this.params = params;
+    this.shouldRun = undefined;
+  }
+
+  /* eslint-disable class-methods-use-this */
+  async checkPrereqs() {
+    throw new Error('checkPrereqs() not implemented in Step subclass');
+  }
+
+  async run() {
+    throw new Error('run() not implemented in Step subclass');
+  }
+  /* eslint-enable class-methods-use-this */
+}
+
+module.exports = Step;
+
+
+/***/ }),
+
 /***/ 2752:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186);
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class ConfigVarsStep {
+class ConfigVarsStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Setting default config vars';
+    super('Setting default config vars', params);
   }
 
   async checkPrereqs() {
@@ -9158,12 +9183,11 @@ module.exports = ConfigVarsStep;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class CreateAppStep {
+class CreateAppStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = `Creating Heroku app "${params.appName}"`;
+    super(`Creating Heroku app "${params.appName}"`, params);
   }
 
   async checkPrereqs() {
@@ -9186,12 +9210,11 @@ module.exports = CreateAppStep;
 const core = __nccwpck_require__(2186);
 
 const circleci = __nccwpck_require__(6986);
+const Step = __nccwpck_require__(9536);
 
-class DockerDeployStep {
+class DockerDeployStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Building Docker image and deploying the image to Heroku';
+    super('Building Docker image and deploying the image to Heroku', params);
   }
 
   async checkPrereqs() {
@@ -9228,12 +9251,11 @@ module.exports = DockerDeployStep;
 
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class HerokuDeployStep {
+class HerokuDeployStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Deploying the app to Heroku -- this may take a few minutes';
+    super('Deploying the app to Heroku -- this may take a few minutes', params);
   }
 
   async checkPrereqs() {
@@ -9258,12 +9280,11 @@ module.exports = HerokuDeployStep;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class HerokuLabsStep {
+class HerokuLabsStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Enabling Heroku Labs features';
+    super('Enabling Heroku Labs features', params);
   }
 
   async checkPrereqs() {
@@ -9301,12 +9322,11 @@ module.exports = HerokuLabsStep;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class HerokuStackStep {
+class HerokuStackStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = `Setting the Heroku stack to ${params.herokuStack}`;
+    super(`Setting the Heroku stack to ${params.herokuStack}`, params);
   }
 
   async checkPrereqs() {
@@ -9413,12 +9433,11 @@ module.exports = upsertController;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class LogDrainStep {
+class LogDrainStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Configuring app to send logs to Logstash';
+    super('Configuring app to send logs to Logstash', params);
   }
 
   async checkPrereqs() {
@@ -9453,12 +9472,11 @@ module.exports = LogDrainStep;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class PipelineCouplingStep {
+class PipelineCouplingStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = `Associating app with Heroku pipeline "${params.pipelineName}"`;
+    super(`Associating app with Heroku pipeline "${params.pipelineName}"`, params);
   }
 
   async checkPrereqs() {
@@ -9493,12 +9511,11 @@ module.exports = PipelineCouplingStep;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
 
-class SetDomainStep {
+class SetDomainStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Configuring custom domains in Cloudflare';
+    super('Configuring custom domains in Cloudflare', params);
   }
 
   async checkPrereqs() {

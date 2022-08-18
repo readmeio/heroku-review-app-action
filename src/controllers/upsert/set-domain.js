@@ -1,10 +1,9 @@
 const heroku = require('../../heroku');
+const Step = require('../step');
 
-class SetDomainStep {
+class SetDomainStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Configuring custom domains in Cloudflare';
+    super('Configuring custom domains in Cloudflare', params);
   }
 
   async checkPrereqs() {

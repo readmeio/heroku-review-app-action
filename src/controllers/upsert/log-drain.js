@@ -1,10 +1,9 @@
 const heroku = require('../../heroku');
+const Step = require('../step');
 
-class LogDrainStep {
+class LogDrainStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Configuring app to send logs to Logstash';
+    super('Configuring app to send logs to Logstash', params);
   }
 
   async checkPrereqs() {

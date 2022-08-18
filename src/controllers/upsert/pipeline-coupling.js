@@ -1,10 +1,9 @@
 const heroku = require('../../heroku');
+const Step = require('../step');
 
-class PipelineCouplingStep {
+class PipelineCouplingStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = `Associating app with Heroku pipeline "${params.pipelineName}"`;
+    super(`Associating app with Heroku pipeline "${params.pipelineName}"`, params);
   }
 
   async checkPrereqs() {

@@ -1,11 +1,10 @@
 const git = require('../../git');
 const heroku = require('../../heroku');
+const Step = require('../step');
 
-class HerokuDeployStep {
+class HerokuDeployStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Deploying the app to Heroku -- this may take a few minutes';
+    super('Deploying the app to Heroku -- this may take a few minutes', params);
   }
 
   async checkPrereqs() {

@@ -1,12 +1,11 @@
 const core = require('@actions/core');
 
 const circleci = require('../../circleci');
+const Step = require('../step');
 
-class DockerDeployStep {
+class DockerDeployStep extends Step {
   constructor(params) {
-    this.params = params;
-    this.shouldRun = undefined;
-    this.title = 'Building Docker image and deploying the image to Heroku';
+    super('Building Docker image and deploying the image to Heroku', params);
   }
 
   async checkPrereqs() {
