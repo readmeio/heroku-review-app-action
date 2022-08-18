@@ -45,22 +45,28 @@ async function getParams() {
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
   let useDocker = false;
-  let nodeEnv;
   const dockerParam = core.getInput('docker', { required: false });
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
       useDocker = true;
-      nodeEnv = core.getInput('node_env', { required: false });
     } else if (dockerParam !== 'false') {
       throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
     }
+  }
+
+  let nodeEnv;
+  let herokuStack;
+  if (useDocker) {
+    nodeEnv = core.getInput('node_env', { required: false });
+  } else {
+    herokuStack = core.getInput('heroku_stack', { required: true });
   }
 
   const owner = github.context.payload.repository.owner.login;
   const repo = github.context.payload.repository.name;
   const branch = github.context.payload.pull_request.head.ref;
 
-  return { pipelineName, appName, logDrainUrl, refName, useDocker, owner, repo, branch, nodeEnv };
+  return { pipelineName, appName, logDrainUrl, refName, useDocker, owner, repo, branch, nodeEnv, herokuStack };
 }
 
 /*
@@ -77,6 +83,7 @@ async function main() {
     core.info(`  - Build type: ${params.useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
     core.info(`  - Heroku pipeline: ${params.pipelineName}`);
     core.info(`  - Heroku app name: ${params.appName}`);
+    core.info('');
 
     try {
       switch (github.context.payload.action) {

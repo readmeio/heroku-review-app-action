@@ -22,7 +22,7 @@ describe('#src/controllers/upsert/heroku-stack', () => {
     it('should never run when creating a new app', async () => {
       heroku.appExists = jest.fn(() => false);
 
-      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, stack: SAMPLE_STACK_NAME });
+      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, herokuStack: SAMPLE_STACK_NAME });
       await step.checkPrereqs();
       expect(step.shouldRun).toBe(false);
     });
@@ -31,7 +31,7 @@ describe('#src/controllers/upsert/heroku-stack', () => {
       heroku.appExists = jest.fn(() => true);
       heroku.getApp = jest.fn(() => ({ id: SAMPLE_APP_ID, stack: { name: 'heroku-24601' } }));
 
-      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, stack: SAMPLE_STACK_NAME });
+      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, herokuStack: SAMPLE_STACK_NAME });
       await step.checkPrereqs();
       expect(step.shouldRun).toBe(true);
     });
@@ -40,7 +40,7 @@ describe('#src/controllers/upsert/heroku-stack', () => {
       heroku.appExists = jest.fn(() => true);
       heroku.getApp = jest.fn(() => ({ id: SAMPLE_APP_ID, stack: { name: SAMPLE_STACK_NAME } }));
 
-      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, stack: SAMPLE_STACK_NAME });
+      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, herokuStack: SAMPLE_STACK_NAME });
       await step.checkPrereqs();
       expect(step.shouldRun).toBe(false);
     });
@@ -51,7 +51,7 @@ describe('#src/controllers/upsert/heroku-stack', () => {
       heroku.getApp = jest.fn(() => ({ id: SAMPLE_APP_ID }));
       heroku.setAppStack = jest.fn();
 
-      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, stack: SAMPLE_STACK_NAME });
+      const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, herokuStack: SAMPLE_STACK_NAME });
       await step.run();
       expect(heroku.setAppStack).toHaveBeenCalledTimes(1);
       expect(heroku.setAppStack).toHaveBeenCalledWith(SAMPLE_APP_ID, SAMPLE_STACK_NAME);

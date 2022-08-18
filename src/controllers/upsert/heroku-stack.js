@@ -4,7 +4,7 @@ class HerokuStackStep {
   constructor(params) {
     this.params = params;
     this.shouldRun = undefined;
-    this.title = `Setting the Heroku stack to ${params.stack}`;
+    this.title = `Setting the Heroku stack to ${params.herokuStack}`;
   }
 
   async checkPrereqs() {
@@ -20,12 +20,12 @@ class HerokuStackStep {
     }
 
     const app = await heroku.getApp(this.params.appName);
-    this.shouldRun = app.stack.name !== this.params.stack;
+    this.shouldRun = app.stack.name !== this.params.herokuStack;
   }
 
   async run() {
     const app = await heroku.getApp(this.params.appName);
-    return heroku.setAppStack(app.id, this.params.stack);
+    return heroku.setAppStack(app.id, this.params.herokuStack);
   }
 }
 
