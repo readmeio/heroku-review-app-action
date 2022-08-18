@@ -1,22 +1,14 @@
-const nock = require('nock');
-
 const LogDrainStep = require('../../../src/controllers/upsert/log-drain');
 const heroku = require('../../../src/heroku');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_APP_NAME = 'owlzilla';
 const SAMPLE_DRAIN_URL = 'https://example.com/log-drain/12345';
 
 describe('#src/controllers/upsert/log-drain', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should not run if the logDrainUrl parameter is empty', async () => {

@@ -1,23 +1,15 @@
-const nock = require('nock');
-
 const HerokuDeployStep = require('../../../src/controllers/upsert/heroku-deploy');
 const git = require('../../../src/git');
 const heroku = require('../../../src/heroku');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_NAME = 'owlzilla';
 const SAMPLE_CREDENTIALS = { email: 'geddy@example.com', apiKey: '33333333-4444-5555-6666-777777777777' };
 const SAMPLE_REF_NAME = 'refs/remotes/pull/52722/merge';
 
 describe('#src/controllers/upsert/heroku-deploy', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should run when not explicitly configured for Docker deploys', async () => {

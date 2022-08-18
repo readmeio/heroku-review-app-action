@@ -1,21 +1,13 @@
-const nock = require('nock');
-
 const SetDomainStep = require('../../../src/controllers/upsert/set-domain');
 const heroku = require('../../../src/heroku');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_APP_NAME = 'owlzilla';
 
 describe('#src/controllers/upsert/set-domain', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should run on the "readme" pipeline', async () => {

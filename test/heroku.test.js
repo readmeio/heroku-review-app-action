@@ -32,6 +32,8 @@ describe('#src/heroku', () => {
 
   beforeEach(heroku.clearCache);
 
+  afterEach(nock.cleanAll);
+
   describe('Heroku API read functions', () => {
     describe('getApp()', () => {
       it('should return the configuration of the given app', async () => {

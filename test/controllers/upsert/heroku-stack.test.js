@@ -1,22 +1,14 @@
-const nock = require('nock');
-
 const HerokuStackStep = require('../../../src/controllers/upsert/heroku-stack');
 const heroku = require('../../../src/heroku');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_APP_NAME = 'owlzilla';
 const SAMPLE_STACK_NAME = 'heroku-2112';
 
 describe('#src/controllers/upsert/heroku-stack', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should never run when creating a new app', async () => {

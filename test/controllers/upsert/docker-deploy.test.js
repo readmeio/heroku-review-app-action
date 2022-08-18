@@ -1,7 +1,7 @@
-const nock = require('nock');
-
 const circleci = require('../../../src/circleci');
 const DockerDeployStep = require('../../../src/controllers/upsert/docker-deploy');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_NAME = 'owlzilla';
 const SAMPLE_PIPELINE_NUMBER = 61201;
@@ -9,15 +9,7 @@ const SAMPLE_PIPELINE_ID = '44444444-5555-6666-7777-888888888888';
 const SAMPLE_PARAMS = { owner: 'owlbert', repo: 'owlzilla' };
 
 describe('#src/controllers/upsert/docker-deploy', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should run when explicitly configured for Docker deploys', async () => {

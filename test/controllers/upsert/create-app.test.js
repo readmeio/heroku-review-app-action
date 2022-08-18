@@ -1,21 +1,13 @@
-const nock = require('nock');
-
 const CreateAppStep = require('../../../src/controllers/upsert/create-app');
 const heroku = require('../../../src/heroku');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_NAME = 'owlzilla';
 const SAMPLE_PARAMS = { appName: SAMPLE_APP_NAME };
 
 describe('#src/controllers/upsert/create-app', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should run when the app does not exist', async () => {

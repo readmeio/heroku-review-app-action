@@ -1,7 +1,7 @@
-const nock = require('nock');
-
 const PipelineCouplingStep = require('../../../src/controllers/upsert/pipeline-coupling');
 const heroku = require('../../../src/heroku');
+
+const setupBeforeAndAfter = require('./setup');
 
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_APP_NAME = 'owlzilla';
@@ -9,15 +9,7 @@ const SAMPLE_PIPELINE_NAME = 'owlline';
 const SAMPLE_PIPELINE_ID = '22222222-3333-4444-5555-666666666666';
 
 describe('#src/controllers/upsert/pipeline-coupling', () => {
-  beforeAll(() => {
-    nock.disableNetConnect();
-  });
-
-  afterAll(() => {
-    nock.enableNetConnect();
-  });
-
-  afterEach(jest.restoreAllMocks);
+  setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
     it('should always run when creating a new app', async () => {
