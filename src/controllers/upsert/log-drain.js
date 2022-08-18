@@ -26,7 +26,7 @@ class LogDrainStep {
 
   async run() {
     const app = await heroku.getApp(this.params.appName);
-    await heroku.addDrain(app.id, this.params.logDrainUrl);
+    return heroku.addDrain(app.id, this.params.logDrainUrl);
   }
 }
 

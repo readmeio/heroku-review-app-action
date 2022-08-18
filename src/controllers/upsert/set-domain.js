@@ -13,7 +13,7 @@ class SetDomainStep {
 
   async run() {
     const app = await heroku.getApp(this.params.appName);
-    await heroku.runAppCommand(app.id, 'node bin/setdomain.js');
+    return heroku.runAppCommand(app.id, 'node bin/setdomain.js');
   }
 }
 

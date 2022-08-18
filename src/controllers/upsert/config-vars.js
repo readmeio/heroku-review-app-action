@@ -20,7 +20,7 @@ class ConfigVarsStep {
       core.info('  - This will reset any config vars that you have changed on this app.');
     }
     const app = await heroku.getApp(this.params.appName);
-    await heroku.setAppVars(app.id, this.configVars);
+    return heroku.setAppVars(app.id, this.configVars);
   }
 }
 

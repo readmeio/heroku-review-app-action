@@ -15,18 +15,21 @@ class HerokuLabsStep {
     }
 
     const app = await heroku.getApp(this.params.appName);
-    this.shouldRun = !(
-      (await heroku.getAppFeature(app.id, 'nodejs-language-metrics')).enabled &&
-      (await heroku.getAppFeature(app.id, 'runtime-dyno-metadata')).enabled &&
-      (await heroku.getAppFeature(app.id, 'runtime-heroku-metrics')).enabled
-    );
+    const features = await Promise.all([
+      heroku.getAppFeature(app.id, 'nodejs-language-metrics'),
+      heroku.getAppFeature(app.id, 'runtime-dyno-metadata'),
+      heroku.getAppFeature(app.id, 'runtime-heroku-metrics'),
+    ]);
+    this.shouldRun = !(features[0].enabled && features[1].enabled && features[2].enabled);
   }
 
   async run() {
     const app = await heroku.getApp(this.params.appName);
-    await heroku.setAppFeature(app.id, 'nodejs-language-metrics', true);
-    await heroku.setAppFeature(app.id, 'runtime-dyno-metadata', true);
-    await heroku.setAppFeature(app.id, 'runtime-heroku-metrics', true);
+    return Promise.all([
+      heroku.setAppFeature(app.id, 'nodejs-language-metrics', true),
+      heroku.setAppFeature(app.id, 'runtime-dyno-metadata', true),
+      heroku.setAppFeature(app.id, 'runtime-heroku-metrics', true),
+    ]);
   }
 }
 

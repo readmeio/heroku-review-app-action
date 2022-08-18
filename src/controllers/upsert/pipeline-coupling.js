@@ -20,7 +20,7 @@ class PipelineCouplingStep {
 
   async run() {
     const app = await heroku.getApp(this.params.appName);
-    await heroku.coupleAppToPipeline(app.id, this.params.pipelineId);
+    return heroku.coupleAppToPipeline(app.id, this.params.pipelineId);
   }
 }
 

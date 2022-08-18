@@ -9114,142 +9114,389 @@ module.exports = deleteController;
 
 /***/ }),
 
-/***/ 786:
+/***/ 2752:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const core = __nccwpck_require__(2186);
+
+const heroku = __nccwpck_require__(7213);
+
+class ConfigVarsStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = 'Setting default config vars';
+  }
+
+  async checkPrereqs() {
+    this.appExists = await heroku.appExists(this.params.appName);
+    this.configVars = await heroku.getPipelineVars(this.params.pipelineId);
+    this.shouldRun = Object.keys(this.configVars).length > 0;
+  }
+
+  async run() {
+    if (this.appExists) {
+      core.info('  - This will reset any config vars that you have changed on this app.');
+    }
+    const app = await heroku.getApp(this.params.appName);
+    return heroku.setAppVars(app.id, this.configVars);
+  }
+}
+
+module.exports = ConfigVarsStep;
+
+
+/***/ }),
+
+/***/ 9725:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const heroku = __nccwpck_require__(7213);
+
+class CreateAppStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = `Creating Heroku app "${params.appName}"`;
+  }
+
+  async checkPrereqs() {
+    this.shouldRun = !(await heroku.appExists(this.params.appName));
+  }
+
+  async run() {
+    return heroku.createApp(this.params.appName, this.params.pipelineId);
+  }
+}
+
+module.exports = CreateAppStep;
+
+
+/***/ }),
+
+/***/ 8214:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186);
 const github = __nccwpck_require__(5438);
 
 const circleci = __nccwpck_require__(6986);
+
+class DockerDeployStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = 'Building Docker image and deploying the image to Heroku';
+  }
+
+  async checkPrereqs() {
+    this.shouldRun = this.params.useDocker;
+  }
+
+  async run() {
+    const owner = github.context.payload.repository.owner.login;
+    const repo = github.context.payload.repository.name;
+    const branch = github.context.payload.pull_request.head.ref;
+    const nodeEnv = core.getInput('node_env', { required: false });
+    const pipeline = await circleci.startDockerBuild(owner, repo, branch, this.params.appName, nodeEnv);
+
+    core.info(`  - Kicked off CircleCI pipeline #${pipeline.number}. Waiting for pipeline to finish;`);
+    core.info('    this may take some time. Watch the build progress here:');
+    core.info(`    https://app.circleci.com/pipelines/github/${owner}/${repo}/${pipeline.number}`);
+
+    const result = await circleci.waitForPipelineFinish(pipeline.id);
+    if (result.status === 'success') {
+      core.info('    Build and deploy pipeline finished successfully!');
+    } else {
+      throw new Error(`CircleCI pipeline #${pipeline.number} finished with status "${result.status}".`);
+    }
+  }
+}
+
+module.exports = DockerDeployStep;
+
+
+/***/ }),
+
+/***/ 4534:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const git = __nccwpck_require__(109);
+const heroku = __nccwpck_require__(7213);
+
+class HerokuDeployStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = 'Deploying the app to Heroku -- this may take a few minutes';
+  }
+
+  async checkPrereqs() {
+    this.shouldRun = !this.params.useDocker;
+  }
+
+  async run() {
+    const credentials = heroku.getCredentials();
+    const pushResult = git.push(credentials, this.params.appName, this.params.refName);
+    if (pushResult.status !== 0) {
+      throw new Error(`Created Heroku app "${this.params.appName}" but ran into errors deploying.`);
+    }
+  }
+}
+
+module.exports = HerokuDeployStep;
+
+
+/***/ }),
+
+/***/ 3360:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const heroku = __nccwpck_require__(7213);
+
+class HerokuLabsStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = 'Enabling Heroku Labs features';
+  }
+
+  async checkPrereqs() {
+    const appExists = await heroku.appExists(this.params.appName);
+    if (!appExists) {
+      this.shouldRun = true;
+      return;
+    }
+
+    const app = await heroku.getApp(this.params.appName);
+    const features = await Promise.all([
+      heroku.getAppFeature(app.id, 'nodejs-language-metrics'),
+      heroku.getAppFeature(app.id, 'runtime-dyno-metadata'),
+      heroku.getAppFeature(app.id, 'runtime-heroku-metrics'),
+    ]);
+    this.shouldRun = !(features[0].enabled && features[1].enabled && features[2].enabled);
+  }
+
+  async run() {
+    const app = await heroku.getApp(this.params.appName);
+    return Promise.all([
+      heroku.setAppFeature(app.id, 'nodejs-language-metrics', true),
+      heroku.setAppFeature(app.id, 'runtime-dyno-metadata', true),
+      heroku.setAppFeature(app.id, 'runtime-heroku-metrics', true),
+    ]);
+  }
+}
+
+module.exports = HerokuLabsStep;
+
+
+/***/ }),
+
+/***/ 9369:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const heroku = __nccwpck_require__(7213);
+
+class HerokuStackStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = `Setting the Heroku stack to ${params.stack}`;
+  }
+
+  async checkPrereqs() {
+    if (this.params.useDocker) {
+      this.shouldRun = false;
+      return;
+    }
+
+    const appExists = await heroku.appExists(this.params.appName);
+    if (!appExists) {
+      this.shouldRun = false;
+      return;
+    }
+
+    const app = await heroku.getApp(this.params.appName);
+    this.shouldRun = app.stack.name !== this.params.stack;
+  }
+
+  async run() {
+    const app = await heroku.getApp(this.params.appName);
+    return heroku.setAppStack(app.id, this.params.stack);
+  }
+}
+
+module.exports = HerokuStackStep;
+
+
+/***/ }),
+
+/***/ 8415:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const core = __nccwpck_require__(2186);
+
 const comments = __nccwpck_require__(4975);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
-async function deployDocker(appName, nodeEnv) {
-  const owner = github.context.payload.repository.owner.login;
-  const repo = github.context.payload.repository.name;
-  const branch = github.context.payload.pull_request.head.ref;
-  const pipeline = await circleci.startDockerBuild(owner, repo, branch, appName, nodeEnv);
-
-  core.info(`  - Kicked off CircleCI pipeline #${pipeline.number}. Waiting for pipeline to finish;`);
-  core.info('    this may take some time. Watch the build progress here:');
-  core.info(`    https://app.circleci.com/pipelines/github/${owner}/${repo}/${pipeline.number}`);
-
-  const result = await circleci.waitForPipelineFinish(pipeline.id);
-  if (result.status === 'success') {
-    core.info('    Build and deploy pipeline finished successfully!');
-  } else {
-    throw new Error(`CircleCI pipeline #${pipeline.number} finished with status "${result.status}".`);
-  }
-}
-
-async function deployHeroku(appName, refName) {
-  const credentials = heroku.getCredentials();
-  const pushResult = git.push(credentials, appName, refName);
-  if (pushResult.status !== 0) {
-    throw new Error(`Created Heroku app "${appName}" but ran into errors deploying.`);
-  }
-}
+const ConfigVarsStep = __nccwpck_require__(2752);
+const CreateAppStep = __nccwpck_require__(9725);
+const DockerDeployStep = __nccwpck_require__(8214);
+const HerokuDeployStep = __nccwpck_require__(4534);
+const HerokuLabsStep = __nccwpck_require__(3360);
+const HerokuStackStep = __nccwpck_require__(9369);
+const LogDrainStep = __nccwpck_require__(7527);
+const PipelineCouplingStep = __nccwpck_require__(1626);
+const SetDomainStep = __nccwpck_require__(1383);
 
 async function upsertController(params) {
-  const { pipelineName, pipelineId, logDrainUrl, appName, refName, useDocker } = params;
+  const sha = git.shaForRef(params.refName); // can't use github.context.sha because we want to exclude merge commits
+  const message = git.messageForRef(params.refName);
 
-  const sha = git.shaForRef(refName); // can't use github.context.sha because we want to exclude merge commits
-  const message = git.messageForRef(refName);
-  const configVars = await heroku.getPipelineVars(pipelineId);
+  const steps = [
+    new CreateAppStep(params),
+    new PipelineCouplingStep(params),
+    new HerokuLabsStep(params),
+    new ConfigVarsStep(params),
+    new LogDrainStep(params),
+    new HerokuStackStep(params),
+    new HerokuDeployStep(params),
+    new DockerDeployStep(params), // should be mutually exclusive with HerokuDeployStep
+    new SetDomainStep(params),
+  ];
 
-  let stepCount = 4;
-  if (Object.keys(configVars).length > 0) {
-    stepCount += 1; // for setAppVars
-  }
-  if (logDrainUrl) {
-    stepCount += 1; // for addDrain
-  }
-  if (pipelineName === 'readme') {
-    stepCount += 1; // for configuring custom domains
-  }
-  if (!useDocker) {
-    stepCount += 1; // for setAppStack
-  }
-
-  let currentStep = 1;
-  core.info(`\n[Step ${currentStep}/${stepCount}] Creating Heroku app "${appName}" if it doesn't already exist...`);
-  const appAlreadyExists = await heroku.appExists(appName);
-  let app;
-  if (appAlreadyExists) {
-    core.info('  - The app already exists, skipping this step.');
-    app = await heroku.getApp(appName);
-  } else {
-    app = await heroku.createApp(appName, pipelineId);
-  }
-  let appUrl = app.web_url;
-
-  currentStep += 1;
-  core.info(`[Step ${currentStep}/${stepCount}] Associating app with Heroku pipeline "${pipelineName}"...`);
-  const pipelineApps = await heroku.getPipelineApps(pipelineId);
-  if (pipelineApps.includes(app.id)) {
-    core.info('  - The app is already associated with the correct pipeline, skipping this step.');
-  } else {
-    await heroku.coupleAppToPipeline(app.id, pipelineId);
-  }
-
-  currentStep += 1;
-  core.info(`[Step ${currentStep}/${stepCount}] Enabling Heroku Labs features...`);
-  await heroku.setAppFeature(app.id, 'nodejs-language-metrics', true);
-  await heroku.setAppFeature(app.id, 'runtime-dyno-metadata', true);
-  await heroku.setAppFeature(app.id, 'runtime-heroku-metrics', true);
-
-  if (Object.keys(configVars).length > 0) {
-    currentStep += 1;
-    core.info(`[Step ${currentStep}/${stepCount}] Setting default config vars...`);
-    if (appAlreadyExists) {
-      core.info('  - This will reset any config vars that you have changed on this app.');
-    }
-    await heroku.setAppVars(app.id, configVars);
-  }
-
-  if (logDrainUrl) {
-    currentStep += 1;
-    core.info(`[Step ${currentStep}/${stepCount}] Configuring app to send logs to Logstash...`);
-    const existingDrains = await heroku.getDrains(app.id);
-    if (existingDrains.includes(logDrainUrl)) {
-      core.info('  - The app is already configured to send logs, skipping this step.');
-    } else {
-      await heroku.addDrain(app.id, logDrainUrl);
+  // Phase 1: check which steps are actually needed for this run, and add them to a queue
+  const queue = [];
+  for (let i = 0; i < steps.length; i += 1) {
+    await steps[i].checkPrereqs(); // eslint-disable-line no-await-in-loop
+    if (steps[i].shouldRun) {
+      queue.push(steps[i]);
     }
   }
 
-  currentStep += 1;
-  if (useDocker) {
-    core.info(`[Step ${currentStep}/${stepCount}] Building Docker image and deploying the image to Heroku...`);
-    await deployDocker(appName, configVars.NODE_ENV);
+  // Phase 2: run everything in the queue
+  const stepCount = queue.length + 1;
+  for (let i = 0; i < queue.length; i += 1) {
+    const number = i + 1;
+    core.info(`[Step ${number}/${stepCount}] ${queue[i].title}...`);
+    await queue[i].run(); // eslint-disable-line no-await-in-loop
+  }
+
+  let appUrl;
+  if (params.pipelineName === 'readme') {
+    appUrl = `http://${params.appName}.readme.ninja`;
   } else {
-    const stack = core.getInput('heroku_stack', { required: true });
-    core.info(`[Step ${currentStep}/${stepCount}] Setting the Heroku stack to ${stack}...`);
-    if (app.stack.name !== stack) {
-      await heroku.setAppStack(app.id, stack);
-    } else {
-      core.info('  - The app is already configured to use this stack, skipping this step.');
-    }
-
-    currentStep += 1;
-    core.info(`[Step ${currentStep}/${stepCount}] Deploying the app to Heroku -- this may take a few minutes...\n`);
-    await deployHeroku(appName, refName);
+    const app = await heroku.getApp(params.appName);
+    appUrl = app.web_url;
   }
-
-  if (pipelineName === 'readme') {
-    currentStep += 1;
-    core.info(`\n[Step ${currentStep}/${stepCount}] Configuring custom domains in Cloudflare...`);
-    await heroku.runAppCommand(app.id, 'node bin/setdomain.js');
-    appUrl = `http://${appName}.readme.ninja`;
-  }
-
-  core.info(`\nSuccessfully deployed Heroku app "${appName}"! Your app is available at:\n    ${appUrl}\n`);
-  await comments.postUpsertComment(appName, appUrl, sha, message);
+  core.info(`\nSuccessfully deployed Heroku app "${params.appName}"! Your app is available at:\n    ${appUrl}\n`);
+  await comments.postUpsertComment(params.appName, appUrl, sha, message);
   return true;
 }
 
 module.exports = upsertController;
+
+
+/***/ }),
+
+/***/ 7527:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const heroku = __nccwpck_require__(7213);
+
+class LogDrainStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = 'Configuring app to send logs to Logstash';
+  }
+
+  async checkPrereqs() {
+    if (!this.params.logDrainUrl) {
+      this.shouldRun = false;
+      return;
+    }
+
+    const appExists = await heroku.appExists(this.params.appName);
+    if (!appExists) {
+      this.shouldRun = true;
+      return;
+    }
+
+    const app = await heroku.getApp(this.params.appName);
+    const existingDrains = await heroku.getDrains(app.id);
+    this.shouldRun = !existingDrains.includes(this.params.logDrainUrl);
+  }
+
+  async run() {
+    const app = await heroku.getApp(this.params.appName);
+    return heroku.addDrain(app.id, this.params.logDrainUrl);
+  }
+}
+
+module.exports = LogDrainStep;
+
+
+/***/ }),
+
+/***/ 1626:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const heroku = __nccwpck_require__(7213);
+
+class PipelineCouplingStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = `Associating app with Heroku pipeline "${params.pipelineName}"`;
+  }
+
+  async checkPrereqs() {
+    const appExists = await heroku.appExists(this.params.appName);
+    if (appExists) {
+      const pipelineApps = await heroku.getPipelineApps(this.params.pipelineId);
+      const app = await heroku.getApp(this.params.appName);
+      this.shouldRun = !pipelineApps.includes(app.id);
+    } else {
+      this.shouldRun = false;
+    }
+  }
+
+  async run() {
+    const app = await heroku.getApp(this.params.appName);
+    return heroku.coupleAppToPipeline(app.id, this.params.pipelineId);
+  }
+}
+
+module.exports = PipelineCouplingStep;
+
+
+/***/ }),
+
+/***/ 1383:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const heroku = __nccwpck_require__(7213);
+
+class SetDomainStep {
+  constructor(params) {
+    this.params = params;
+    this.shouldRun = undefined;
+    this.title = 'Configuring custom domains in Cloudflare';
+  }
+
+  async checkPrereqs() {
+    this.shouldRun = this.params.pipelineName === 'readme';
+  }
+
+  async run() {
+    const app = await heroku.getApp(this.params.appName);
+    return heroku.runAppCommand(app.id, 'node bin/setdomain.js');
+  }
+}
+
+module.exports = SetDomainStep;
 
 
 /***/ }),
@@ -9412,6 +9659,13 @@ module.exports.getCredentials = function () {
 /* Loads information about the given app */
 module.exports.getApp = async function (appName) {
   return herokuGet(`https://api.heroku.com/apps/${appName}`);
+};
+
+/*
+ * Returns a boolean indicating whether the given Heroku Labs feature is enabled.
+ */
+module.exports.getAppFeature = async function (appId, featureName) {
+  return herokuGet(`https://api.heroku.com/apps/${appId}/features/${featureName}`);
 };
 
 /* Loads the UUID of the named pipeline from Heroku. */
@@ -9595,7 +9849,7 @@ const github = __nccwpck_require__(5438);
 const circleci = __nccwpck_require__(6986);
 const comments = __nccwpck_require__(4975);
 const deleteController = __nccwpck_require__(5839);
-const upsertController = __nccwpck_require__(786);
+const upsertController = __nccwpck_require__(8415);
 const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
