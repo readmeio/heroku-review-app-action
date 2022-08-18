@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 const core = require('@actions/core');
 const fetch = require('node-fetch');
 
@@ -65,17 +64,19 @@ module.exports.initializeCredentials = function () {
  * a single Heroku app. Returns the CircleCI pipeline response described here:
  * https://circleci.com/docs/api/v2/index.html#operation/triggerPipeline
  */
-module.exports.startDockerBuild = async function (owner, repo, branch, appName, nodeEnv) {
-  const parameters = {
-    RUN_TEST: false,
-    RUN_DOCKER: true,
-    HEROKU_APPS_TO_PUSH: appName,
-    HEROKU_APPS_TO_RELEASE: appName,
-    ...(nodeEnv && { NODE_ENV: nodeEnv }),
-  };
-  return circleFetch(`/project/gh/${owner}/${repo}/pipeline`, {
+module.exports.startDockerBuild = async function (params) {
+  return circleFetch(`/project/gh/${params.owner}/${params.repo}/pipeline`, {
     method: 'POST',
-    body: JSON.stringify({ branch, parameters }),
+    body: JSON.stringify({
+      branch: params.branch,
+      parameters: {
+        RUN_TEST: false,
+        RUN_DOCKER: true,
+        HEROKU_APPS_TO_PUSH: params.appName,
+        HEROKU_APPS_TO_RELEASE: params.appName,
+        ...(params.nodeEnv && { NODE_ENV: params.nodeEnv }),
+      },
+    }),
   });
 };
 
@@ -114,8 +115,8 @@ module.exports.waitForPipelineFinish = async function (pipelineId) {
     // On each run of the loop, pause briefly, then check the status of the
     // pipeline. The loop will exit when the pipeline's workflow is no longer
     // running, or when we've exceeded our timeout.
-    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-promise-executor-return
-    const workflow = await getPipelineWorkflow(pipelineId);
+    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-await-in-loop, no-promise-executor-return
+    const workflow = await getPipelineWorkflow(pipelineId); // eslint-disable-line no-await-in-loop
     if (workflow && workflow.status !== 'running') {
       return workflow;
     }

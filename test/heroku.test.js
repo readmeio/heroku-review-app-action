@@ -7,12 +7,19 @@ const SAMPLE_APP_NAME = 'dr-owlbert-pr-1234';
 const SAMPLE_COMMAND = 'npm run lint';
 const SAMPLE_CONFIG_VARS = { MAILCHIMP_API_KEY: '123', NODE_ENV: 'pr' };
 const SAMPLE_DRAIN_URL = 'https://logs.example.com/my-log-drain';
+const SAMPLE_FEATURE = 'spine-reticulation';
 const SAMPLE_PIPELINE_ID = '12121212-3434-5656-7878-909090909090';
 const SAMPLE_PIPELINE_NAME = 'aqueduct';
 const SAMPLE_RESPONSE = { response_field: 'response_value' };
 const SAMPLE_REGION = 'eu';
 const SAMPLE_STACK = 'heroku-22';
 const SAMPLE_TEAM = 'owlbert';
+const SAMPLE_CREATE_PARAMS = {
+  appName: SAMPLE_APP_NAME,
+  herokuRegion: SAMPLE_REGION,
+  herokuStack: SAMPLE_STACK,
+  herokuTeam: SAMPLE_TEAM,
+};
 
 describe('#src/heroku', () => {
   beforeAll(() => {
@@ -22,6 +29,10 @@ describe('#src/heroku', () => {
   afterAll(() => {
     nock.enableNetConnect();
   });
+
+  beforeEach(heroku.clearCache);
+
+  afterEach(nock.cleanAll);
 
   describe('Heroku API read functions', () => {
     describe('getApp()', () => {
@@ -33,6 +44,20 @@ describe('#src/heroku', () => {
       it('should throw an error if the given app does not exist', async () => {
         nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(404);
         await expect(heroku.getApp(SAMPLE_APP_NAME)).rejects.toThrow(/404/);
+      });
+    });
+
+    describe('getAppFeature()', () => {
+      it('should return the configuration of the given app', async () => {
+        nock('https://api.heroku.com')
+          .get(`/apps/${SAMPLE_APP_NAME}/features/${SAMPLE_FEATURE}`)
+          .reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.getAppFeature(SAMPLE_APP_NAME, SAMPLE_FEATURE)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+      });
+
+      it('should throw an error if the given app or feature does not exist', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}/features/${SAMPLE_FEATURE}`).reply(404);
+        await expect(heroku.getAppFeature(SAMPLE_APP_NAME, SAMPLE_FEATURE)).rejects.toThrow(/404/);
       });
     });
 
@@ -100,6 +125,31 @@ describe('#src/heroku', () => {
         nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(404);
         await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(false);
       });
+
+      it('should cache positive results, only calling the Heroku API once', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(true);
+        await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(true);
+      });
+
+      it('should cache negative results, only calling the Heroku API once', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(404, SAMPLE_RESPONSE);
+        await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(false);
+        await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(false);
+      });
+
+      it.only('should return true after creating a new app', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(404);
+        await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(false);
+
+        nock('https://api.heroku.com')
+          .post('/teams/apps', { name: SAMPLE_APP_NAME, region: SAMPLE_REGION, stack: SAMPLE_STACK, team: SAMPLE_TEAM })
+          .reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.createApp(SAMPLE_CREATE_PARAMS)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.appExists(SAMPLE_APP_NAME)).resolves.toBe(true);
+      });
     });
 
     describe('getDrains()', () => {
@@ -119,18 +169,6 @@ describe('#src/heroku', () => {
 
   describe('Heroku API write functions', () => {
     describe('createApp()', () => {
-      beforeAll(() => {
-        process.env.INPUT_HEROKU_REGION = SAMPLE_REGION;
-        process.env.INPUT_HEROKU_STACK = SAMPLE_STACK;
-        process.env.INPUT_HEROKU_TEAM = SAMPLE_TEAM;
-      });
-
-      afterAll(() => {
-        delete process.env.INPUT_HEROKU_REGION;
-        delete process.env.INPUT_HEROKU_STACK;
-        delete process.env.INPUT_HEROKU_TEAM;
-      });
-
       it('should POST to the correct endpoint to create an app', async () => {
         nock('https://api.heroku.com')
           .post('/teams/apps', { name: SAMPLE_APP_NAME, region: SAMPLE_REGION, stack: SAMPLE_STACK, team: SAMPLE_TEAM })
@@ -160,20 +198,19 @@ describe('#src/heroku', () => {
     describe('setAppFeature()', () => {
       it('should PATCH to the correct endpoint to enable a Heroku Labs feature', async () => {
         nock('https://api.heroku.com')
-          .patch(`/apps/${SAMPLE_APP_ID}/features/ruby-language-metrics`, { enabled: true })
+          .patch(`/apps/${SAMPLE_APP_ID}/features/${SAMPLE_FEATURE}`, { enabled: true })
           .reply(200, SAMPLE_RESPONSE);
-        await expect(heroku.setAppFeature(SAMPLE_APP_ID, 'ruby-language-metrics', true)).resolves.toStrictEqual(
-          SAMPLE_RESPONSE
-        );
+        await expect(heroku.setAppFeature(SAMPLE_APP_ID, SAMPLE_FEATURE, true)).resolves.toStrictEqual(SAMPLE_RESPONSE);
       });
     });
 
     describe('setAppStack()', () => {
       it('should PATCH to the correct endpoint to switch to the given stack', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(200, { id: SAMPLE_APP_ID });
         nock('https://api.heroku.com')
           .patch(`/apps/${SAMPLE_APP_ID}`, { build_stack: SAMPLE_STACK })
           .reply(200, SAMPLE_RESPONSE);
-        await expect(heroku.setAppStack(SAMPLE_APP_ID, SAMPLE_STACK)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+        await expect(heroku.setAppStack(SAMPLE_APP_NAME, SAMPLE_STACK)).resolves.toStrictEqual(SAMPLE_RESPONSE);
       });
     });
 
