@@ -25,8 +25,8 @@ async function upsertController(params) {
     new ConfigVarsStep(params),
     new LogDrainStep(params),
     new HerokuStackStep(params),
-    new HerokuDeployStep(params),
-    new DockerDeployStep(params), // should be mutually exclusive with HerokuDeployStep
+    new HerokuDeployStep(params), // mutually exclusive with DockerDeployStep
+    new DockerDeployStep(params), // mutually exclusive with HerokuDeployStep
     new SetDomainStep(params),
   ];
 

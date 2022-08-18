@@ -8766,7 +8766,6 @@ function wrappy (fn, cb) {
 /***/ 6986:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/* eslint-disable no-await-in-loop */
 const core = __nccwpck_require__(2186);
 const fetch = __nccwpck_require__(467);
 
@@ -8882,8 +8881,8 @@ module.exports.waitForPipelineFinish = async function (pipelineId) {
     // On each run of the loop, pause briefly, then check the status of the
     // pipeline. The loop will exit when the pipeline's workflow is no longer
     // running, or when we've exceeded our timeout.
-    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-promise-executor-return
-    const workflow = await getPipelineWorkflow(pipelineId);
+    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-await-in-loop, no-promise-executor-return
+    const workflow = await getPipelineWorkflow(pipelineId); // eslint-disable-line no-await-in-loop
     if (workflow && workflow.status !== 'running') {
       return workflow;
     }
@@ -9369,8 +9368,8 @@ async function upsertController(params) {
     new ConfigVarsStep(params),
     new LogDrainStep(params),
     new HerokuStackStep(params),
-    new HerokuDeployStep(params),
-    new DockerDeployStep(params), // should be mutually exclusive with HerokuDeployStep
+    new HerokuDeployStep(params), // mutually exclusive with DockerDeployStep
+    new DockerDeployStep(params), // mutually exclusive with HerokuDeployStep
     new SetDomainStep(params),
   ];
 

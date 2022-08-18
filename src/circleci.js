@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop */
 const core = require('@actions/core');
 const fetch = require('node-fetch');
 
@@ -114,8 +113,8 @@ module.exports.waitForPipelineFinish = async function (pipelineId) {
     // On each run of the loop, pause briefly, then check the status of the
     // pipeline. The loop will exit when the pipeline's workflow is no longer
     // running, or when we've exceeded our timeout.
-    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-promise-executor-return
-    const workflow = await getPipelineWorkflow(pipelineId);
+    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-await-in-loop, no-promise-executor-return
+    const workflow = await getPipelineWorkflow(pipelineId); // eslint-disable-line no-await-in-loop
     if (workflow && workflow.status !== 'running') {
       return workflow;
     }
