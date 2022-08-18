@@ -8832,17 +8832,19 @@ module.exports.initializeCredentials = function () {
  * a single Heroku app. Returns the CircleCI pipeline response described here:
  * https://circleci.com/docs/api/v2/index.html#operation/triggerPipeline
  */
-module.exports.startDockerBuild = async function (owner, repo, branch, appName, nodeEnv) {
-  const parameters = {
-    RUN_TEST: false,
-    RUN_DOCKER: true,
-    HEROKU_APPS_TO_PUSH: appName,
-    HEROKU_APPS_TO_RELEASE: appName,
-    ...(nodeEnv && { NODE_ENV: nodeEnv }),
-  };
-  return circleFetch(`/project/gh/${owner}/${repo}/pipeline`, {
+module.exports.startDockerBuild = async function (params) {
+  return circleFetch(`/project/gh/${params.owner}/${params.repo}/pipeline`, {
     method: 'POST',
-    body: JSON.stringify({ branch, parameters }),
+    body: JSON.stringify({
+      branch: params.branch,
+      parameters: {
+        RUN_TEST: false,
+        RUN_DOCKER: true,
+        HEROKU_APPS_TO_PUSH: params.appName,
+        HEROKU_APPS_TO_RELEASE: params.appName,
+        ...(params.nodeEnv && { NODE_ENV: params.nodeEnv }),
+      },
+    }),
   });
 };
 
@@ -9182,7 +9184,6 @@ module.exports = CreateAppStep;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186);
-const github = __nccwpck_require__(5438);
 
 const circleci = __nccwpck_require__(6986);
 
@@ -9201,15 +9202,12 @@ class DockerDeployStep {
   }
 
   async run() {
-    const owner = github.context.payload.repository.owner.login;
-    const repo = github.context.payload.repository.name;
-    const branch = github.context.payload.pull_request.head.ref;
-    const nodeEnv = core.getInput('node_env', { required: false });
-    const pipeline = await circleci.startDockerBuild(owner, repo, branch, this.params.appName, nodeEnv);
+    const pipeline = await circleci.startDockerBuild(this.params);
+    const url = `https://app.circleci.com/pipelines/github/${this.params.owner}/${this.params.repo}/${pipeline.number}`;
 
     core.info(`  - Kicked off CircleCI pipeline #${pipeline.number}. Waiting for pipeline to finish;`);
     core.info('    this may take some time. Watch the build progress here:');
-    core.info(`    https://app.circleci.com/pipelines/github/${owner}/${repo}/${pipeline.number}`);
+    core.info(`    ${url}`);
 
     const result = await circleci.waitForPipelineFinish(pipeline.id);
     if (result.status === 'success') {
@@ -9246,7 +9244,7 @@ class HerokuDeployStep {
     const credentials = heroku.getCredentials();
     const pushResult = git.push(credentials, this.params.appName, this.params.refName);
     if (pushResult.status !== 0) {
-      throw new Error(`Created Heroku app "${this.params.appName}" but ran into errors deploying.`);
+      throw new Error(`Ran into errors when deploying Heroku app "${this.params.appName}".`);
     }
   }
 }
@@ -9912,16 +9910,22 @@ async function getParams() {
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
   let useDocker = false;
+  let nodeEnv;
   const dockerParam = core.getInput('docker', { required: false });
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
       useDocker = true;
+      nodeEnv = core.getInput('node_env', { required: false });
     } else if (dockerParam !== 'false') {
       throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
     }
   }
 
-  return { pipelineName, appName, logDrainUrl, refName, useDocker };
+  const owner = github.context.payload.repository.owner.login;
+  const repo = github.context.payload.repository.name;
+  const branch = github.context.payload.pull_request.head.ref;
+
+  return { pipelineName, appName, logDrainUrl, refName, useDocker, owner, repo, branch, nodeEnv };
 }
 
 /*

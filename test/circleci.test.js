@@ -8,6 +8,13 @@ const SAMPLE_REPO = 'owl-ears';
 const SAMPLE_BRANCH = 'feat/ui/big-droopy-elephant-ears';
 const SAMPLE_NODE_ENV = 'pull_request_env';
 const SAMPLE_PIPELINE_ID = '11111111-1111-1111-1111-111111111111';
+const SAMPLE_PARAMS = {
+  owner: SAMPLE_OWNER,
+  repo: SAMPLE_REPO,
+  branch: SAMPLE_BRANCH,
+  appName: SAMPLE_APP_NAME,
+  nodeEnv: SAMPLE_NODE_ENV,
+};
 
 describe('#src/circleci', () => {
   beforeAll(() => {
@@ -40,16 +47,12 @@ describe('#src/circleci', () => {
         nock('https://circleci.com/api/v2')
           .post(`/project/gh/${SAMPLE_OWNER}/${SAMPLE_REPO}/pipeline`, { branch: SAMPLE_BRANCH, parameters })
           .reply(200, response);
-        await expect(
-          circleci.startDockerBuild(SAMPLE_OWNER, SAMPLE_REPO, SAMPLE_BRANCH, SAMPLE_APP_NAME, SAMPLE_NODE_ENV)
-        ).resolves.toStrictEqual(response);
+        await expect(circleci.startDockerBuild(SAMPLE_PARAMS)).resolves.toStrictEqual(response);
       });
 
       it('should throw an error if the CircleCI API returns an error', async () => {
         nock('https://circleci.com/api/v2').post(`/project/gh/${SAMPLE_OWNER}/${SAMPLE_REPO}/pipeline`).reply(401);
-        await expect(
-          circleci.startDockerBuild(SAMPLE_OWNER, SAMPLE_REPO, SAMPLE_BRANCH, SAMPLE_APP_NAME, SAMPLE_NODE_ENV)
-        ).rejects.toThrow(/401/);
+        await expect(circleci.startDockerBuild(SAMPLE_PARAMS)).rejects.toThrow(/401/);
       });
     });
 

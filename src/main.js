@@ -45,16 +45,22 @@ async function getParams() {
   const refName = `refs/remotes/pull/${prNumber}/merge`;
 
   let useDocker = false;
+  let nodeEnv;
   const dockerParam = core.getInput('docker', { required: false });
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
       useDocker = true;
+      nodeEnv = core.getInput('node_env', { required: false });
     } else if (dockerParam !== 'false') {
       throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
     }
   }
 
-  return { pipelineName, appName, logDrainUrl, refName, useDocker };
+  const owner = github.context.payload.repository.owner.login;
+  const repo = github.context.payload.repository.name;
+  const branch = github.context.payload.pull_request.head.ref;
+
+  return { pipelineName, appName, logDrainUrl, refName, useDocker, owner, repo, branch, nodeEnv };
 }
 
 /*

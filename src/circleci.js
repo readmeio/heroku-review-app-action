@@ -64,17 +64,19 @@ module.exports.initializeCredentials = function () {
  * a single Heroku app. Returns the CircleCI pipeline response described here:
  * https://circleci.com/docs/api/v2/index.html#operation/triggerPipeline
  */
-module.exports.startDockerBuild = async function (owner, repo, branch, appName, nodeEnv) {
-  const parameters = {
-    RUN_TEST: false,
-    RUN_DOCKER: true,
-    HEROKU_APPS_TO_PUSH: appName,
-    HEROKU_APPS_TO_RELEASE: appName,
-    ...(nodeEnv && { NODE_ENV: nodeEnv }),
-  };
-  return circleFetch(`/project/gh/${owner}/${repo}/pipeline`, {
+module.exports.startDockerBuild = async function (params) {
+  return circleFetch(`/project/gh/${params.owner}/${params.repo}/pipeline`, {
     method: 'POST',
-    body: JSON.stringify({ branch, parameters }),
+    body: JSON.stringify({
+      branch: params.branch,
+      parameters: {
+        RUN_TEST: false,
+        RUN_DOCKER: true,
+        HEROKU_APPS_TO_PUSH: params.appName,
+        HEROKU_APPS_TO_RELEASE: params.appName,
+        ...(params.nodeEnv && { NODE_ENV: params.nodeEnv }),
+      },
+    }),
   });
 };
 

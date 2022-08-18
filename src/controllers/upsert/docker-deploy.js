@@ -1,5 +1,4 @@
 const core = require('@actions/core');
-const github = require('@actions/github');
 
 const circleci = require('../../circleci');
 
@@ -18,15 +17,12 @@ class DockerDeployStep {
   }
 
   async run() {
-    const owner = github.context.payload.repository.owner.login;
-    const repo = github.context.payload.repository.name;
-    const branch = github.context.payload.pull_request.head.ref;
-    const nodeEnv = core.getInput('node_env', { required: false });
-    const pipeline = await circleci.startDockerBuild(owner, repo, branch, this.params.appName, nodeEnv);
+    const pipeline = await circleci.startDockerBuild(this.params);
+    const url = `https://app.circleci.com/pipelines/github/${this.params.owner}/${this.params.repo}/${pipeline.number}`;
 
     core.info(`  - Kicked off CircleCI pipeline #${pipeline.number}. Waiting for pipeline to finish;`);
     core.info('    this may take some time. Watch the build progress here:');
-    core.info(`    https://app.circleci.com/pipelines/github/${owner}/${repo}/${pipeline.number}`);
+    core.info(`    ${url}`);
 
     const result = await circleci.waitForPipelineFinish(pipeline.id);
     if (result.status === 'success') {
