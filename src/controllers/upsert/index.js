@@ -15,17 +15,13 @@ const PipelineCouplingStep = require('./pipeline-coupling');
 const SetDomainStep = require('./set-domain');
 
 async function getStepsForThisRun(steps) {
-  const queue = [];
-  for (let i = 0; i < steps.length; i += 1) {
-    await steps[i].checkPrereqs(); // eslint-disable-line no-await-in-loop
-    if (steps[i].shouldRun) {
-      queue.push(steps[i]);
-    }
-  }
-  return queue;
+  // checkPrereqs() can run concurrently on all steps
+  await Promise.all(steps.map(step => step.checkPrereqs()));
+  return steps.filter(step => step.shouldRun);
 }
 
 async function runSteps(queue) {
+  // The steps themselves should be run sequentially
   const stepCount = queue.length;
   for (let i = 0; i < queue.length; i += 1) {
     const number = i + 1;

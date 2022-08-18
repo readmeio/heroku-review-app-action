@@ -9355,17 +9355,13 @@ const PipelineCouplingStep = __nccwpck_require__(1626);
 const SetDomainStep = __nccwpck_require__(1383);
 
 async function getStepsForThisRun(steps) {
-  const queue = [];
-  for (let i = 0; i < steps.length; i += 1) {
-    await steps[i].checkPrereqs(); // eslint-disable-line no-await-in-loop
-    if (steps[i].shouldRun) {
-      queue.push(steps[i]);
-    }
-  }
-  return queue;
+  // checkPrereqs() can run concurrently on all steps
+  await Promise.all(steps.map(step => step.checkPrereqs()));
+  return steps.filter(step => step.shouldRun);
 }
 
 async function runSteps(queue) {
+  // The steps themselves should be run sequentially
   const stepCount = queue.length;
   for (let i = 0; i < queue.length; i += 1) {
     const number = i + 1;
