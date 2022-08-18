@@ -16,7 +16,7 @@ class HerokuDeployStep {
     const credentials = heroku.getCredentials();
     const pushResult = git.push(credentials, this.params.appName, this.params.refName);
     if (pushResult.status !== 0) {
-      throw new Error(`Created Heroku app "${this.params.appName}" but ran into errors deploying.`);
+      throw new Error(`Ran into errors when deploying Heroku app "${this.params.appName}".`);
     }
   }
 }
