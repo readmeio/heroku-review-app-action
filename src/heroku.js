@@ -73,6 +73,13 @@ module.exports.getApp = async function (appName) {
   return herokuGet(`https://api.heroku.com/apps/${appName}`);
 };
 
+/*
+ * Returns a boolean indicating whether the given Heroku Labs feature is enabled.
+ */
+module.exports.getAppFeature = async function (appId, featureName) {
+  return herokuGet(`https://api.heroku.com/apps/${appId}/features/${featureName}`);
+};
+
 /* Loads the UUID of the named pipeline from Heroku. */
 module.exports.getPipelineId = async function (pipelineName) {
   try {

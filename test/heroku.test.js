@@ -7,6 +7,7 @@ const SAMPLE_APP_NAME = 'dr-owlbert-pr-1234';
 const SAMPLE_COMMAND = 'npm run lint';
 const SAMPLE_CONFIG_VARS = { MAILCHIMP_API_KEY: '123', NODE_ENV: 'pr' };
 const SAMPLE_DRAIN_URL = 'https://logs.example.com/my-log-drain';
+const SAMPLE_FEATURE = 'spine-reticulation';
 const SAMPLE_PIPELINE_ID = '12121212-3434-5656-7878-909090909090';
 const SAMPLE_PIPELINE_NAME = 'aqueduct';
 const SAMPLE_RESPONSE = { response_field: 'response_value' };
@@ -33,6 +34,20 @@ describe('#src/heroku', () => {
       it('should throw an error if the given app does not exist', async () => {
         nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}`).reply(404);
         await expect(heroku.getApp(SAMPLE_APP_NAME)).rejects.toThrow(/404/);
+      });
+    });
+
+    describe('getAppFeature()', () => {
+      it('should return the configuration of the given app', async () => {
+        nock('https://api.heroku.com')
+          .get(`/apps/${SAMPLE_APP_NAME}/features/${SAMPLE_FEATURE}`)
+          .reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.getAppFeature(SAMPLE_APP_NAME, SAMPLE_FEATURE)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+      });
+
+      it('should throw an error if the given app or feature does not exist', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}/features/${SAMPLE_FEATURE}`).reply(404);
+        await expect(heroku.getAppFeature(SAMPLE_APP_NAME, SAMPLE_FEATURE)).rejects.toThrow(/404/);
       });
     });
 
@@ -160,11 +175,9 @@ describe('#src/heroku', () => {
     describe('setAppFeature()', () => {
       it('should PATCH to the correct endpoint to enable a Heroku Labs feature', async () => {
         nock('https://api.heroku.com')
-          .patch(`/apps/${SAMPLE_APP_ID}/features/ruby-language-metrics`, { enabled: true })
+          .patch(`/apps/${SAMPLE_APP_ID}/features/${SAMPLE_FEATURE}`, { enabled: true })
           .reply(200, SAMPLE_RESPONSE);
-        await expect(heroku.setAppFeature(SAMPLE_APP_ID, 'ruby-language-metrics', true)).resolves.toStrictEqual(
-          SAMPLE_RESPONSE
-        );
+        await expect(heroku.setAppFeature(SAMPLE_APP_ID, SAMPLE_FEATURE, true)).resolves.toStrictEqual(SAMPLE_RESPONSE);
       });
     });
 
