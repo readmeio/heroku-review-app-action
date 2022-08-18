@@ -4,6 +4,9 @@ const fetch = require('node-fetch');
 let HEROKU_EMAIL;
 let HEROKU_API_KEY;
 
+let appCache = {};
+let appExistsCache = {};
+
 ///
 /// Helper Functions
 ///
@@ -40,6 +43,12 @@ async function herokuGet(url) {
   return resp.json();
 }
 
+/* Clears the getApp() and appExists() caches. Probably only needed for unit tests. */
+module.exports.clearCache = async function () {
+  appCache = {};
+  appExistsCache = {};
+};
+
 ///
 /// Heroku credentials functions
 ///
@@ -68,9 +77,19 @@ module.exports.getCredentials = function () {
 /// Heroku API read functions
 ///
 
-/* Loads information about the given app */
+/* Loads information about the given app; data is memoized to avoid repetitive lookups */
 module.exports.getApp = async function (appName) {
-  return herokuGet(`https://api.heroku.com/apps/${appName}`);
+  if (!appCache[appName]) {
+    appCache[appName] = await herokuGet(`https://api.heroku.com/apps/${appName}`);
+  }
+  return appCache[appName];
+};
+
+/*
+ * Returns a boolean indicating whether the given Heroku Labs feature is enabled.
+ */
+module.exports.getAppFeature = async function (appId, featureName) {
+  return herokuGet(`https://api.heroku.com/apps/${appId}/features/${featureName}`);
 };
 
 /* Loads the UUID of the named pipeline from Heroku. */
@@ -115,17 +134,21 @@ module.exports.getReviewAppConfig = async function (pipelineId) {
   }
 };
 
-/* Checks whether an app with the given name exists on Heroku. Returns bool. */
+/* Checks whether an app with the given name exists on Heroku. Data is memoized to avoid repetitive lookups. Returns bool. */
 module.exports.appExists = async function (appName) {
-  try {
-    await herokuFetch(`https://api.heroku.com/apps/${appName}`, { method: 'GET' });
-    return true;
-  } catch (err) {
-    if (err instanceof HttpResponseError && err.status === 404) {
-      return false;
+  if (appExistsCache[appName] === undefined) {
+    try {
+      await module.exports.getApp(appName);
+      appExistsCache[appName] = true;
+    } catch (err) {
+      if (err instanceof HttpResponseError && err.status === 404) {
+        appExistsCache[appName] = false;
+      } else {
+        throw err;
+      }
     }
-    throw err;
   }
+  return appExistsCache[appName];
 };
 
 ///
@@ -133,17 +156,22 @@ module.exports.appExists = async function (appName) {
 ///
 
 /* Creates a Heroku app with the given name. */
-module.exports.createApp = async function (name) {
-  const region = core.getInput('heroku_region', { required: true });
-  const stack = core.getInput('heroku_stack', { required: true });
-  const team = core.getInput('heroku_team', { required: true });
-
+module.exports.createApp = async function (params) {
   const resp = await herokuFetch('https://api.heroku.com/teams/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, region, stack, team }),
+    body: JSON.stringify({
+      name: params.appName,
+      region: params.herokuRegion,
+      stack: params.herokuStack,
+      team: params.herokuTeam,
+    }),
   });
-  return resp.json();
+  const result = await resp.json();
+
+  delete appCache[params.appName];
+  delete appExistsCache[params.appName];
+  return result;
 };
 
 /* Deletes a Heroku app with the given name. */
@@ -155,6 +183,8 @@ module.exports.deleteApp = async function (name) {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
   });
+  delete appCache[name];
+  delete appExistsCache[name];
   return resp.json();
 };
 
@@ -170,6 +200,25 @@ module.exports.coupleAppToPipeline = async function (appId, pipelineId) {
     body: JSON.stringify({ app: appId, pipeline: pipelineId, stage: 'development' }),
   });
   return resp.json();
+};
+
+/*
+ * Changes the Heroku stack (application execution environments) to the one in
+ * the input parameters. Not relevant for Docker image-based deploys; stack will
+ * reset to "container" when a Docker image is released to the app.
+ */
+module.exports.setAppStack = async function (appName, stack) {
+  const app = await module.exports.getApp(appName);
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${app.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ build_stack: stack }),
+  });
+
+  const result = await resp.json();
+  delete appCache[appName];
+
+  return result;
 };
 
 /*

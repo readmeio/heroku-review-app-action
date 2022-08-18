@@ -163,13 +163,13 @@ module.exports.postErrorComment = async function (params) {
   const repo = github.context.payload.repository.name;
   const runId = github.context.runId;
 
-  const actionUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+  const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
   const dashboardUrl = `https://dashboard.heroku.com/apps/${params.appName}`;
   const runDescription = `${github.context.workflow} #${github.context.runNumber}`;
 
-  const img = `<a href="${actionUrl}"><img align="right" height="100" src="${sadOwlbert}" /></a>`;
-  const links = `:page_facing_up: **Review the GitHub Action logs:** ${actionUrl}\n\n:mag: **Inspect the app in Heroku:** ${dashboardUrl}`;
+  const img = `<a href="${runUrl}"><img align="right" height="100" src="${sadOwlbert}" /></a>`;
+  const links = `:page_facing_up: **Review the GitHub Action logs:** ${runUrl}\n\n:mag: **Inspect the app in Heroku:** ${dashboardUrl}`;
 
-  const comment = `## :warning: There was a problem deploying this review app to Heroku. ${img}\n\n${runDescription} failed.\n\n${links}\n`;
+  const comment = `## :warning: There was a problem deploying this review app to Heroku. ${img}\n\n[${runDescription}](${runUrl}) failed.\n\n${links}\n`;
   return createComment(comment);
 };

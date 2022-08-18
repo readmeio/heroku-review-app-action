@@ -26,6 +26,12 @@ inputs:
   heroku_team:
     description: 'Name of the team that will own the new Heroku app.'
     default: readme
+  docker:
+    description: "If \"true\", this will build a Docker image on CircleCI and ship it to Heroku, instead of building directly on Heroku."
+    default: "false"
+  circleci_api_token:
+    description: "CircleCI API credentials to invoke a new pipeline and check its status. Required if docker is true."
+    required: false
 outputs:
   comment:
     description: "A comment which can be posted to the pull request after the action finishes."
