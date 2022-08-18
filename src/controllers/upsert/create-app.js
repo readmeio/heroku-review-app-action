@@ -12,7 +12,7 @@ class CreateAppStep {
   }
 
   async run() {
-    return heroku.createApp(this.params.appName);
+    return heroku.createApp(this.params);
   }
 }
 

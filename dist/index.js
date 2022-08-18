@@ -9171,7 +9171,7 @@ class CreateAppStep {
   }
 
   async run() {
-    return heroku.createApp(this.params.appName);
+    return heroku.createApp(this.params);
   }
 }
 
@@ -9326,8 +9326,7 @@ class HerokuStackStep {
   }
 
   async run() {
-    const app = await heroku.getApp(this.params.appName);
-    return heroku.setAppStack(app.id, this.params.herokuStack);
+    return heroku.setAppStack(this.params.appName, this.params.herokuStack);
   }
 }
 
@@ -9612,8 +9611,8 @@ const fetch = __nccwpck_require__(467);
 let HEROKU_EMAIL;
 let HEROKU_API_KEY;
 
-const appCache = {};
-const appExistsCache = {};
+let appCache = {};
+let appExistsCache = {};
 
 ///
 /// Helper Functions
@@ -9653,10 +9652,8 @@ async function herokuGet(url) {
 
 /* Clears the getApp() and appExists() caches. Probably only needed for unit tests. */
 module.exports.clearCache = async function () {
-  Object.keys(appCache).forEach(key => {
-    delete appCache[key];
-    delete appExistsCache[key];
-  });
+  appCache = {};
+  appExistsCache = {};
 };
 
 ///
@@ -9766,17 +9763,22 @@ module.exports.appExists = async function (appName) {
 ///
 
 /* Creates a Heroku app with the given name. */
-module.exports.createApp = async function (name) {
-  const region = core.getInput('heroku_region', { required: true });
-  const stack = core.getInput('heroku_stack', { required: true });
-  const team = core.getInput('heroku_team', { required: true });
-
+module.exports.createApp = async function (params) {
   const resp = await herokuFetch('https://api.heroku.com/teams/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, region, stack, team }),
+    body: JSON.stringify({
+      name: params.appName,
+      region: params.herokuRegion,
+      stack: params.herokuStack,
+      team: params.herokuTeam,
+    }),
   });
-  return resp.json();
+  const result = await resp.json();
+
+  delete appCache[params.appName];
+  delete appExistsCache[params.appName];
+  return result;
 };
 
 /* Deletes a Heroku app with the given name. */
@@ -9788,6 +9790,8 @@ module.exports.deleteApp = async function (name) {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
   });
+  delete appCache[name];
+  delete appExistsCache[name];
   return resp.json();
 };
 
@@ -9810,13 +9814,18 @@ module.exports.coupleAppToPipeline = async function (appId, pipelineId) {
  * the input parameters. Not relevant for Docker image-based deploys; stack will
  * reset to "container" when a Docker image is released to the app.
  */
-module.exports.setAppStack = async function (appId, stack) {
-  const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}`, {
+module.exports.setAppStack = async function (appName, stack) {
+  const app = await module.exports.getApp(appName);
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${app.id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ build_stack: stack }),
   });
-  return resp.json();
+
+  const result = await resp.json();
+  delete appCache[appName];
+
+  return result;
 };
 
 /*
@@ -9894,13 +9903,15 @@ const heroku = __nccwpck_require__(7213);
  * Loads common parameters used by multiple controllers.
  */
 async function getParams() {
-  const pipelineName = core.getInput('pipeline_name', { required: true });
-  if (!/^[a-z0-9_-]+$/.test(pipelineName)) {
-    throw new Error(`"${pipelineName}" is not a valid Heroku pipeline name`);
+  const params = {};
+
+  params.pipelineName = core.getInput('pipeline_name', { required: true });
+  if (!/^[a-z0-9_-]+$/.test(params.pipelineName)) {
+    throw new Error(`"${params.pipelineName}" is not a valid Heroku pipeline name`);
   }
-  const pipelineId = await heroku.getPipelineId(pipelineName);
+  const pipelineId = await heroku.getPipelineId(params.pipelineName);
   if (!pipelineId) {
-    throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
+    throw new Error(`The pipeline "${params.pipelineName}" does not exist on Heroku`);
   }
 
   const prNumber = parseInt(github.context.payload.number, 10);
@@ -9911,11 +9922,11 @@ async function getParams() {
   // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100. We
   // need to hardcode a workaround for PRs opened before that.
   // @todo remove this once all PRs below #7100 have been closed.
-  const baseName = pipelineName === 'readme' && prNumber < 7100 ? 'readme-stage' : pipelineName;
+  const baseName = params.pipelineName === 'readme' && prNumber < 7100 ? 'readme-stage' : params.pipelineName;
 
-  const appName = `${baseName}-pr-${prNumber}`;
+  params.appName = `${baseName}-pr-${prNumber}`;
 
-  const logDrainUrl = core.getInput('log_drain_url', { required: false });
+  params.logDrainUrl = core.getInput('log_drain_url', { required: false });
 
   // The git repo checkout and refName parameter aren't strictly necessary for
   // Docker builds, but they're both used by upsertController to write the pull
@@ -9925,31 +9936,32 @@ async function getParams() {
     throw new Error(`Current working directory "${process.cwd()}" is not a Git repo`);
   }
 
-  const refName = `refs/remotes/pull/${prNumber}/merge`;
+  params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  let useDocker = false;
+  params.useDocker = false;
   const dockerParam = core.getInput('docker', { required: false });
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
-      useDocker = true;
+      params.useDocker = true;
     } else if (dockerParam !== 'false') {
       throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
     }
   }
 
-  let nodeEnv;
-  let herokuStack;
-  if (useDocker) {
-    nodeEnv = core.getInput('node_env', { required: false });
+  params.herokuRegion = core.getInput('heroku_region', { required: true });
+  params.herokuTeam = core.getInput('heroku_team', { required: true });
+
+  if (params.useDocker) {
+    params.nodeEnv = core.getInput('node_env', { required: false });
   } else {
-    herokuStack = core.getInput('heroku_stack', { required: true });
+    params.herokuStack = core.getInput('heroku_stack', { required: true });
   }
 
-  const owner = github.context.payload.repository.owner.login;
-  const repo = github.context.payload.repository.name;
-  const branch = github.context.payload.pull_request.head.ref;
+  params.owner = github.context.payload.repository.owner.login;
+  params.repo = github.context.payload.repository.name;
+  params.branch = github.context.payload.pull_request.head.ref;
 
-  return { pipelineName, appName, logDrainUrl, refName, useDocker, owner, repo, branch, nodeEnv, herokuStack };
+  return params;
 }
 
 /*

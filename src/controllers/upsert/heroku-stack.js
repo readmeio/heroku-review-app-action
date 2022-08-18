@@ -24,8 +24,7 @@ class HerokuStackStep {
   }
 
   async run() {
-    const app = await heroku.getApp(this.params.appName);
-    return heroku.setAppStack(app.id, this.params.herokuStack);
+    return heroku.setAppStack(this.params.appName, this.params.herokuStack);
   }
 }
 

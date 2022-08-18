@@ -4,8 +4,8 @@ const fetch = require('node-fetch');
 let HEROKU_EMAIL;
 let HEROKU_API_KEY;
 
-const appCache = {};
-const appExistsCache = {};
+let appCache = {};
+let appExistsCache = {};
 
 ///
 /// Helper Functions
@@ -45,10 +45,8 @@ async function herokuGet(url) {
 
 /* Clears the getApp() and appExists() caches. Probably only needed for unit tests. */
 module.exports.clearCache = async function () {
-  Object.keys(appCache).forEach(key => {
-    delete appCache[key];
-    delete appExistsCache[key];
-  });
+  appCache = {};
+  appExistsCache = {};
 };
 
 ///
@@ -158,17 +156,22 @@ module.exports.appExists = async function (appName) {
 ///
 
 /* Creates a Heroku app with the given name. */
-module.exports.createApp = async function (name) {
-  const region = core.getInput('heroku_region', { required: true });
-  const stack = core.getInput('heroku_stack', { required: true });
-  const team = core.getInput('heroku_team', { required: true });
-
+module.exports.createApp = async function (params) {
   const resp = await herokuFetch('https://api.heroku.com/teams/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, region, stack, team }),
+    body: JSON.stringify({
+      name: params.appName,
+      region: params.herokuRegion,
+      stack: params.herokuStack,
+      team: params.herokuTeam,
+    }),
   });
-  return resp.json();
+  const result = await resp.json();
+
+  delete appCache[params.appName];
+  delete appExistsCache[params.appName];
+  return result;
 };
 
 /* Deletes a Heroku app with the given name. */
@@ -180,6 +183,8 @@ module.exports.deleteApp = async function (name) {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
   });
+  delete appCache[name];
+  delete appExistsCache[name];
   return resp.json();
 };
 
@@ -202,13 +207,18 @@ module.exports.coupleAppToPipeline = async function (appId, pipelineId) {
  * the input parameters. Not relevant for Docker image-based deploys; stack will
  * reset to "container" when a Docker image is released to the app.
  */
-module.exports.setAppStack = async function (appId, stack) {
-  const resp = await herokuFetch(`https://api.heroku.com/apps/${appId}`, {
+module.exports.setAppStack = async function (appName, stack) {
+  const app = await module.exports.getApp(appName);
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${app.id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ build_stack: stack }),
   });
-  return resp.json();
+
+  const result = await resp.json();
+  delete appCache[appName];
+
+  return result;
 };
 
 /*

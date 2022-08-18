@@ -11,13 +11,15 @@ const heroku = require('./heroku');
  * Loads common parameters used by multiple controllers.
  */
 async function getParams() {
-  const pipelineName = core.getInput('pipeline_name', { required: true });
-  if (!/^[a-z0-9_-]+$/.test(pipelineName)) {
-    throw new Error(`"${pipelineName}" is not a valid Heroku pipeline name`);
+  const params = {};
+
+  params.pipelineName = core.getInput('pipeline_name', { required: true });
+  if (!/^[a-z0-9_-]+$/.test(params.pipelineName)) {
+    throw new Error(`"${params.pipelineName}" is not a valid Heroku pipeline name`);
   }
-  const pipelineId = await heroku.getPipelineId(pipelineName);
+  const pipelineId = await heroku.getPipelineId(params.pipelineName);
   if (!pipelineId) {
-    throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
+    throw new Error(`The pipeline "${params.pipelineName}" does not exist on Heroku`);
   }
 
   const prNumber = parseInt(github.context.payload.number, 10);
@@ -28,11 +30,11 @@ async function getParams() {
   // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100. We
   // need to hardcode a workaround for PRs opened before that.
   // @todo remove this once all PRs below #7100 have been closed.
-  const baseName = pipelineName === 'readme' && prNumber < 7100 ? 'readme-stage' : pipelineName;
+  const baseName = params.pipelineName === 'readme' && prNumber < 7100 ? 'readme-stage' : params.pipelineName;
 
-  const appName = `${baseName}-pr-${prNumber}`;
+  params.appName = `${baseName}-pr-${prNumber}`;
 
-  const logDrainUrl = core.getInput('log_drain_url', { required: false });
+  params.logDrainUrl = core.getInput('log_drain_url', { required: false });
 
   // The git repo checkout and refName parameter aren't strictly necessary for
   // Docker builds, but they're both used by upsertController to write the pull
@@ -42,31 +44,32 @@ async function getParams() {
     throw new Error(`Current working directory "${process.cwd()}" is not a Git repo`);
   }
 
-  const refName = `refs/remotes/pull/${prNumber}/merge`;
+  params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  let useDocker = false;
+  params.useDocker = false;
   const dockerParam = core.getInput('docker', { required: false });
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
-      useDocker = true;
+      params.useDocker = true;
     } else if (dockerParam !== 'false') {
       throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
     }
   }
 
-  let nodeEnv;
-  let herokuStack;
-  if (useDocker) {
-    nodeEnv = core.getInput('node_env', { required: false });
+  params.herokuRegion = core.getInput('heroku_region', { required: true });
+  params.herokuTeam = core.getInput('heroku_team', { required: true });
+
+  if (params.useDocker) {
+    params.nodeEnv = core.getInput('node_env', { required: false });
   } else {
-    herokuStack = core.getInput('heroku_stack', { required: true });
+    params.herokuStack = core.getInput('heroku_stack', { required: true });
   }
 
-  const owner = github.context.payload.repository.owner.login;
-  const repo = github.context.payload.repository.name;
-  const branch = github.context.payload.pull_request.head.ref;
+  params.owner = github.context.payload.repository.owner.login;
+  params.repo = github.context.payload.repository.name;
+  params.branch = github.context.payload.pull_request.head.ref;
 
-  return { pipelineName, appName, logDrainUrl, refName, useDocker, owner, repo, branch, nodeEnv, herokuStack };
+  return params;
 }
 
 /*

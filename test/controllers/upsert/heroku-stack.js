@@ -48,13 +48,12 @@ describe('#src/controllers/upsert/heroku-stack', () => {
 
   describe('run()', () => {
     it('should call setAppStack with correct stack name', async () => {
-      heroku.getApp = jest.fn(() => ({ id: SAMPLE_APP_ID }));
       heroku.setAppStack = jest.fn();
 
       const step = new HerokuStackStep({ appName: SAMPLE_APP_NAME, herokuStack: SAMPLE_STACK_NAME });
       await step.run();
       expect(heroku.setAppStack).toHaveBeenCalledTimes(1);
-      expect(heroku.setAppStack).toHaveBeenCalledWith(SAMPLE_APP_ID, SAMPLE_STACK_NAME);
+      expect(heroku.setAppStack).toHaveBeenCalledWith(SAMPLE_APP_NAME, SAMPLE_STACK_NAME);
     });
   });
 });
