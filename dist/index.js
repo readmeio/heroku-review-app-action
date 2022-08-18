@@ -9871,7 +9871,7 @@ const git = __nccwpck_require__(109);
 const heroku = __nccwpck_require__(7213);
 
 /*
- * Loads common parameters used by all the controllers.
+ * Loads common parameters used by multiple controllers.
  */
 async function getParams() {
   const pipelineName = core.getInput('pipeline_name', { required: true });
@@ -9888,15 +9888,10 @@ async function getParams() {
     throw new Error(`"${prNumber}" is not a valid pull request number (must be an integer)`);
   }
 
-  let baseName;
-  if (pipelineName === 'readme' && prNumber < 7100) {
-    // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100.
-    // We need to hardcode a workaround for PRs opened before that.
-    // @todo remove this once all PRs below #7100 have been closed.
-    baseName = 'readme-stage';
-  } else {
-    baseName = pipelineName;
-  }
+  // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100. We
+  // need to hardcode a workaround for PRs opened before that.
+  // @todo remove this once all PRs below #7100 have been closed.
+  const baseName = pipelineName === 'readme' && prNumber < 7100 ? 'readme-stage' : pipelineName;
 
   const appName = `${baseName}-pr-${prNumber}`;
 
