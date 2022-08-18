@@ -9612,6 +9612,9 @@ const fetch = __nccwpck_require__(467);
 let HEROKU_EMAIL;
 let HEROKU_API_KEY;
 
+const appCache = {};
+const appExistsCache = {};
+
 ///
 /// Helper Functions
 ///
@@ -9648,6 +9651,14 @@ async function herokuGet(url) {
   return resp.json();
 }
 
+/* Clears the getApp() and appExists() caches. Probably only needed for unit tests. */
+module.exports.clearCache = async function () {
+  Object.keys(appCache).forEach(key => {
+    delete appCache[key];
+    delete appExistsCache[key];
+  });
+};
+
 ///
 /// Heroku credentials functions
 ///
@@ -9676,9 +9687,12 @@ module.exports.getCredentials = function () {
 /// Heroku API read functions
 ///
 
-/* Loads information about the given app */
+/* Loads information about the given app; data is memoized to avoid repetitive lookups */
 module.exports.getApp = async function (appName) {
-  return herokuGet(`https://api.heroku.com/apps/${appName}`);
+  if (!appCache[appName]) {
+    appCache[appName] = await herokuGet(`https://api.heroku.com/apps/${appName}`);
+  }
+  return appCache[appName];
 };
 
 /*
@@ -9730,17 +9744,21 @@ module.exports.getReviewAppConfig = async function (pipelineId) {
   }
 };
 
-/* Checks whether an app with the given name exists on Heroku. Returns bool. */
+/* Checks whether an app with the given name exists on Heroku. Data is memoized to avoid repetitive lookups. Returns bool. */
 module.exports.appExists = async function (appName) {
-  try {
-    await herokuFetch(`https://api.heroku.com/apps/${appName}`, { method: 'GET' });
-    return true;
-  } catch (err) {
-    if (err instanceof HttpResponseError && err.status === 404) {
-      return false;
+  if (appExistsCache[appName] === undefined) {
+    try {
+      await module.exports.getApp(appName);
+      appExistsCache[appName] = true;
+    } catch (err) {
+      if (err instanceof HttpResponseError && err.status === 404) {
+        appExistsCache[appName] = false;
+      } else {
+        throw err;
+      }
     }
-    throw err;
   }
+  return appExistsCache[appName];
 };
 
 ///

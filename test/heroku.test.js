@@ -24,6 +24,8 @@ describe('#src/heroku', () => {
     nock.enableNetConnect();
   });
 
+  beforeEach(heroku.clearCache);
+
   describe('Heroku API read functions', () => {
     describe('getApp()', () => {
       it('should return the configuration of the given app', async () => {
