@@ -9939,7 +9939,7 @@ async function getParams() {
   params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
   params.useDocker = false;
-  const dockerParam = core.getInput('docker_builds', { required: false });
+  const dockerParam = core.getInput('docker', { required: false });
   core.info(`Raw value of docker param = ${dockerParam}`);
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
