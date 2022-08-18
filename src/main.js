@@ -32,12 +32,7 @@ async function getParams() {
     // @todo remove this once all PRs below #7100 have been closed.
     baseName = 'readme-stage';
   } else {
-    const reviewAppConfig = await heroku.getReviewAppConfig(pipelineId);
-    if (reviewAppConfig) {
-      baseName = reviewAppConfig.base_name;
-    } else {
-      baseName = pipelineName;
-    }
+    baseName = pipelineName;
   }
 
   const appName = `${baseName}-pr-${prNumber}`;
