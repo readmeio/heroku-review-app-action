@@ -48,6 +48,7 @@ async function getParams() {
 
   params.useDocker = false;
   const dockerParam = core.getInput('docker', { required: false });
+  core.info(`Raw value of docker param = ${dockerParam}`);
   if (dockerParam && dockerParam.length > 0) {
     if (dockerParam === 'true') {
       params.useDocker = true;
