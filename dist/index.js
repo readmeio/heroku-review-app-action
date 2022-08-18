@@ -9129,8 +9129,13 @@ class ConfigVarsStep {
   }
 
   async checkPrereqs() {
+    this.pipelineId = await heroku.getPipelineId(this.params.pipelineName);
+    if (!this.pipelineId) {
+      throw new Error(`The pipeline "${this.params.pipelineName}" does not exist on Heroku`);
+    }
+
     this.appExists = await heroku.appExists(this.params.appName);
-    this.configVars = await heroku.getPipelineVars(this.params.pipelineId);
+    this.configVars = await heroku.getPipelineVars(this.pipelineId);
     this.shouldRun = Object.keys(this.configVars).length > 0;
   }
 
@@ -9165,7 +9170,7 @@ class CreateAppStep {
   }
 
   async run() {
-    return heroku.createApp(this.params.appName, this.params.pipelineId);
+    return heroku.createApp(this.params.appName);
   }
 }
 
@@ -9191,6 +9196,9 @@ class DockerDeployStep {
 
   async checkPrereqs() {
     this.shouldRun = this.params.useDocker;
+    if (this.shouldRun) {
+      circleci.initializeCredentials();
+    }
   }
 
   async run() {
@@ -9403,6 +9411,8 @@ module.exports = upsertController;
 /***/ 7527:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const core = __nccwpck_require__(2186);
+
 const heroku = __nccwpck_require__(7213);
 
 class LogDrainStep {
@@ -9413,7 +9423,9 @@ class LogDrainStep {
   }
 
   async checkPrereqs() {
-    if (!this.params.logDrainUrl) {
+    this.logDrainUrl = core.getInput('log_drain_url', { required: false });
+
+    if (!this.logDrainUrl) {
       this.shouldRun = false;
       return;
     }
@@ -9453,19 +9465,25 @@ class PipelineCouplingStep {
   }
 
   async checkPrereqs() {
-    const appExists = await heroku.appExists(this.params.appName);
-    if (appExists) {
-      const pipelineApps = await heroku.getPipelineApps(this.params.pipelineId);
-      const app = await heroku.getApp(this.params.appName);
-      this.shouldRun = !pipelineApps.includes(app.id);
-    } else {
-      this.shouldRun = false;
+    this.pipelineId = await heroku.getPipelineId(this.params.pipelineName);
+    if (!this.pipelineId) {
+      throw new Error(`The pipeline "${this.params.pipelineName}" does not exist on Heroku`);
     }
+
+    const appExists = await heroku.appExists(this.params.appName);
+    if (!appExists) {
+      this.shouldRun = true;
+      return;
+    }
+
+    const pipelineApps = await heroku.getPipelineApps(this.pipelineId);
+    const app = await heroku.getApp(this.params.appName);
+    this.shouldRun = !pipelineApps.includes(app.id);
   }
 
   async run() {
     const app = await heroku.getApp(this.params.appName);
-    return heroku.coupleAppToPipeline(app.id, this.params.pipelineId);
+    return heroku.coupleAppToPipeline(app.id, this.pipelineId);
   }
 }
 
@@ -9846,7 +9864,6 @@ module.exports.runAppCommand = async function (appId, command) {
 const core = __nccwpck_require__(2186);
 const github = __nccwpck_require__(5438);
 
-const circleci = __nccwpck_require__(6986);
 const comments = __nccwpck_require__(4975);
 const deleteController = __nccwpck_require__(5839);
 const upsertController = __nccwpck_require__(8415);
@@ -9865,8 +9882,6 @@ async function getParams() {
   if (!pipelineId) {
     throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
   }
-
-  const logDrainUrl = core.getInput('log_drain_url', { required: false });
 
   const prNumber = parseInt(github.context.payload.number, 10);
   if (!prNumber) {
@@ -9910,7 +9925,7 @@ async function getParams() {
     }
   }
 
-  return { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName, useDocker };
+  return { pipelineName, appName, refName, useDocker };
 }
 
 /*
@@ -9921,21 +9936,12 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName, useDocker } = params;
-
-    if (params.useDocker) {
-      circleci.initializeCredentials();
-    }
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
-    core.info(`  - Build type: ${useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
-    core.info(`  - Git ref: ${refName}`);
-    core.info(`  - Heroku pipeline name: ${pipelineName}`);
-    core.info(`  - Heroku pipeline ID: ${pipelineId}`);
-    core.info(`  - Log drain URL: ${logDrainUrl || 'none'}`);
-    core.info(`  - Review app base name: ${baseName}`);
-    core.info(`  - Heroku app name: ${appName}`);
+    core.info(`  - Build type: ${params.useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
+    core.info(`  - Heroku pipeline: ${params.pipelineName}`);
+    core.info(`  - Heroku app name: ${params.appName}`);
 
     try {
       switch (github.context.payload.action) {

@@ -1,7 +1,6 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
 
-const circleci = require('./circleci');
 const comments = require('./comments');
 const deleteController = require('./controllers/delete');
 const upsertController = require('./controllers/upsert');
@@ -20,8 +19,6 @@ async function getParams() {
   if (!pipelineId) {
     throw new Error(`The pipeline "${pipelineName}" does not exist on Heroku`);
   }
-
-  const logDrainUrl = core.getInput('log_drain_url', { required: false });
 
   const prNumber = parseInt(github.context.payload.number, 10);
   if (!prNumber) {
@@ -65,7 +62,7 @@ async function getParams() {
     }
   }
 
-  return { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName, useDocker };
+  return { pipelineName, appName, refName, useDocker };
 }
 
 /*
@@ -76,21 +73,12 @@ async function main() {
     heroku.initializeCredentials();
 
     const params = await getParams();
-    const { pipelineName, pipelineId, logDrainUrl, baseName, appName, refName, useDocker } = params;
-
-    if (params.useDocker) {
-      circleci.initializeCredentials();
-    }
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
-    core.info(`  - Build type: ${useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
-    core.info(`  - Git ref: ${refName}`);
-    core.info(`  - Heroku pipeline name: ${pipelineName}`);
-    core.info(`  - Heroku pipeline ID: ${pipelineId}`);
-    core.info(`  - Log drain URL: ${logDrainUrl || 'none'}`);
-    core.info(`  - Review app base name: ${baseName}`);
-    core.info(`  - Heroku app name: ${appName}`);
+    core.info(`  - Build type: ${params.useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
+    core.info(`  - Heroku pipeline: ${params.pipelineName}`);
+    core.info(`  - Heroku app name: ${params.appName}`);
 
     try {
       switch (github.context.payload.action) {

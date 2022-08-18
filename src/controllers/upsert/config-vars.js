@@ -10,8 +10,13 @@ class ConfigVarsStep {
   }
 
   async checkPrereqs() {
+    this.pipelineId = await heroku.getPipelineId(this.params.pipelineName);
+    if (!this.pipelineId) {
+      throw new Error(`The pipeline "${this.params.pipelineName}" does not exist on Heroku`);
+    }
+
     this.appExists = await heroku.appExists(this.params.appName);
-    this.configVars = await heroku.getPipelineVars(this.params.pipelineId);
+    this.configVars = await heroku.getPipelineVars(this.pipelineId);
     this.shouldRun = Object.keys(this.configVars).length > 0;
   }
 
