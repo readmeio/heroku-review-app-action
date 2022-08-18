@@ -5,7 +5,6 @@ const heroku = require('../../../src/heroku');
 
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_APP_NAME = 'owlzilla';
-const SAMPLE_PIPELINE_NAME = 'owlpipeline';
 
 describe('#src/controllers/upsert/heroku-labs', () => {
   beforeAll(() => {
@@ -53,7 +52,7 @@ describe('#src/controllers/upsert/heroku-labs', () => {
       heroku.getApp = jest.fn(() => ({ id: SAMPLE_APP_ID }));
       heroku.setAppFeature = jest.fn();
 
-      const step = new HerokuLabsStep({ appName: SAMPLE_APP_NAME, pipelineName: SAMPLE_PIPELINE_NAME });
+      const step = new HerokuLabsStep({ appName: SAMPLE_APP_NAME });
       await step.run();
       expect(heroku.setAppFeature).toHaveBeenCalledTimes(3);
       expect(heroku.setAppFeature).toHaveBeenCalledWith(SAMPLE_APP_ID, 'nodejs-language-metrics', true);

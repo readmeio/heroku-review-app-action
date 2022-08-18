@@ -6,7 +6,7 @@ const heroku = require('../../../src/heroku');
 const SAMPLE_APP_ID = '11111111-2222-3333-4444-555555555555';
 const SAMPLE_PIPELINE_ID = '22222222-3333-4444-5555-666666666666';
 const SAMPLE_APP_NAME = 'owlzilla';
-const SAMPLE_PIPELINE_NAME = 'owlpipeline';
+const SAMPLE_PIPELINE_NAME = 'owlline';
 const SAMPLE_CONFIG_VARS = { VAR1: 'value1', VAR2: 'value2' };
 
 describe('#src/controllers/upsert/config-vars', () => {

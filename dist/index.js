@@ -9419,8 +9419,6 @@ module.exports = upsertController;
 /***/ 7527:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const core = __nccwpck_require__(2186);
-
 const heroku = __nccwpck_require__(7213);
 
 class LogDrainStep {
@@ -9431,9 +9429,7 @@ class LogDrainStep {
   }
 
   async checkPrereqs() {
-    this.logDrainUrl = core.getInput('log_drain_url', { required: false });
-
-    if (!this.logDrainUrl) {
+    if (!this.params.logDrainUrl) {
       this.shouldRun = false;
       return;
     }
@@ -9903,6 +9899,8 @@ async function getParams() {
 
   const appName = `${baseName}-pr-${prNumber}`;
 
+  const logDrainUrl = core.getInput('log_drain_url', { required: false });
+
   // The git repo checkout and refName parameter aren't strictly necessary for
   // Docker builds, but they're both used by upsertController to write the pull
   // request comment, so we'll check the repo and set refName even for Docker.
@@ -9923,7 +9921,7 @@ async function getParams() {
     }
   }
 
-  return { pipelineName, appName, refName, useDocker };
+  return { pipelineName, appName, logDrainUrl, refName, useDocker };
 }
 
 /*
