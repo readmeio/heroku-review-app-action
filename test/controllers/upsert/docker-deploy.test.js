@@ -60,7 +60,7 @@ describe('#src/controllers/upsert/docker-deploy', () => {
       expect(circleci.waitForPipelineFinish).toHaveBeenCalledWith(SAMPLE_PIPELINE_ID);
     });
 
-    it.skip('should throw an error if the pipeline times out (throws an error)', async () => {
+    it('should throw an error if the pipeline times out (throws an error)', async () => {
       circleci.startDockerBuild = jest.fn(() => ({ number: SAMPLE_PIPELINE_NUMBER, id: SAMPLE_PIPELINE_ID }));
       circleci.waitForPipelineFinish = jest.fn(() => {
         // simulate what happens when the pipeline times out
