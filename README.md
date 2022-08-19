@@ -23,10 +23,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # use 1 when using Docker image builds
       - name: Update Heroku
         uses: readmeio/heroku-review-app-action@main
         with:
+          docker: false  # true when using Docker builds
+          circleci_api_token: ${{ secrets.CIRCLECI_API_TOKEN }}  # only needed for Docker builds
           heroku_api_key: << personal API key for a Heroku user >>
           heroku_email: << email adddress of that Heroku user >>
           pipeline_name: << name of your Heroku pipeline >>
@@ -38,6 +40,8 @@ Once that file has been committed to your main branch, this should automatically
 
 * `heroku_api_key`: Personal API key for a Heroku user. Required.
 * `heroku_email`: Email address of that Heroku user. Required.
+* `circleci_api_token`: API token for kicking off a CircleCI workflow. Required when `docker` is `true`.
+* `docker`: `true` to build a Docker image on CircleCI and ship it to Heroku, `false` to build directly on Heroku.
 * `pipeline_name`: Name of the Heroku pipeline which contains review apps for this repo. Must already exist in Heroku. Required.
 * `log_drain_url`: If specified, this log drain will be added to review apps when they are created. If you want to include the PR number in the URL, you can use `${{github.event.number}}`. Optional.
 
