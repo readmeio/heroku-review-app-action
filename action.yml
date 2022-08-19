@@ -32,6 +32,9 @@ inputs:
   circleci_api_token:
     description: "CircleCI API credentials to invoke a new pipeline and check its status. Required if docker is true."
     required: false
+  node_env:
+    description: 'NODE_ENV value to pass to CircleCI build pipeline'
+    required: false
 outputs:
   comment:
     description: "A comment which can be posted to the pull request after the action finishes."
