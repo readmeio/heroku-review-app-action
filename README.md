@@ -7,6 +7,8 @@ This is a GitHub Action that can be used as an alternative to Heroku Review Apps
 * When a Pull Request is [synchronized](https://github.community/t/what-is-a-pull-request-synchronize-event/14784), the review app is rebuilt with the latest source
 * When a Pull Request is closed, the review app is deleted
 
+**Note:** GitHub Action workflows will not run on `pull_request` activity if the pull request has a merge conflict. The merge conflict must be resolved first.
+
 To use this action, you'll need a [Heroku pipeline](https://devcenter.heroku.com/articles/pipelines) for your app. Then add a file called `.github/workflows/review-app.yaml` with this content:
 
 ```yaml
