@@ -27,12 +27,7 @@ async function getParams() {
     throw new Error(`"${prNumber}" is not a valid pull request number (must be an integer)`);
   }
 
-  // Our baseName changed from 'readme-stage' to just 'readme' at PR #7100. We
-  // need to hardcode a workaround for PRs opened before that.
-  // @todo remove this once all PRs below #7100 have been closed.
-  const baseName = params.pipelineName === 'readme' && prNumber < 7100 ? 'readme-stage' : params.pipelineName;
-
-  params.appName = `${baseName}-pr-${prNumber}`;
+  params.appName = `${params.pipelineName}-pr-${prNumber}`;
 
   params.logDrainUrl = core.getInput('log_drain_url', { required: false });
 
