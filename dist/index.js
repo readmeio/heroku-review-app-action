@@ -9805,8 +9805,23 @@ module.exports.postDeleteComment = async function () {
 module.exports.postErrorComment = async function (params) {
   const owner = github.context.payload.repository.owner.login;
   const repo = github.context.payload.repository.name;
-  const runId = github.context.runId;
 
+  if (github.context.payload.action !== 'closed') {
+    // Deploys of large codebases will hit a race condition when a pull request
+    // is closed while a deploy is actively running. The underlying Heroku app
+    // will be closed before the deploy finishes, which causes an error on the
+    // deploy process. To resolve this, we reload the current state of the pull
+    // request and check whether the PR has been closed.
+    const octokit = getOctokit();
+    const prNumber = parseInt(github.context.payload.number, 10);
+    const resp = await octokit.rest.pulls.get({ owner, repo, pull_number: prNumber });
+    if (resp.data && resp.data.state === 'closed') {
+      core.warning('Not commenting on this pull request because the pull request is already closed');
+      return undefined;
+    }
+  }
+
+  const runId = github.context.runId;
   const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
   const dashboardUrl = `https://dashboard.heroku.com/apps/${params.appName}`;
   const runDescription = `${github.context.workflow} #${github.context.runNumber}`;
