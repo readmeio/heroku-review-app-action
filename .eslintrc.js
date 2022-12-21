@@ -1,6 +1,6 @@
 module.exports = {
   extends: ['@readme/eslint-config'],
-  plugins: ['node', 'import', 'jest'],
+  plugins: ['node', 'import'],
   root: true,
   ignorePatterns: ['node_modules', 'dist'],
   rules: {
