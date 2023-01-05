@@ -75,3 +75,4 @@ By default `actions/checkout` does a [shallow clone](https://github.blog/2020-12
 * `npm run lint`
 * `npm test`
 * `npm build` (to rebuild `dist/index.js`, otherwise your changes won't be reflected in the copy that actually runs on GitHub!)
+test
