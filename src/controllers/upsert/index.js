@@ -51,7 +51,7 @@ async function upsertController(params) {
   // Print some final output once we're finished
   let appUrl;
   if (params.pipelineName === 'readme') {
-    appUrl = `http://${params.appName}.readme.ninja`;
+    appUrl = `https://${params.appName}.readme.ninja`;
   } else {
     const app = await heroku.getApp(params.appName);
     appUrl = app.web_url;
