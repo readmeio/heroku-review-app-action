@@ -55,7 +55,7 @@ async function getParams() {
   params.herokuTeam = core.getInput('heroku_team', { required: true });
 
   if (params.useDocker) {
-    params.nodeEnv = core.getInput('node_env', { required: false });
+    params.nodeEnv = core.getInput('node_env', { required: true });
   } else {
     params.herokuStack = core.getInput('heroku_stack', { required: true });
   }
