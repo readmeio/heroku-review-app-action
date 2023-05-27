@@ -39,5 +39,5 @@ outputs:
   comment:
     description: "A comment which can be posted to the pull request after the action finishes."
 runs:
-  using: 'node18'
+  using: 'node16'
   main: 'dist/index.js'
