@@ -1,4 +1,4 @@
-![Owlbert wearing a jetpack](http://owlbert.io/images/owlberts-png/Jetpack.psd.png)
+![Owlbert wearing a jetpack](https://github.com/readmeio/heroku-review-app-action/assets/313895/4af75a69-4e31-4b92-82af-5d4c9a4d4fab)
 
 # heroku-review-app-action
 
