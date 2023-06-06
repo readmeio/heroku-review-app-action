@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          # With Docker builds, you can use "fetch-depth: 10" to speed up the checkout step.
+          # When using Docker builds, you can use "fetch-depth: 2" to speed up the checkout step.
           fetch-depth: 0
       - name: Update Heroku
         uses: readmeio/heroku-review-app-action@main
