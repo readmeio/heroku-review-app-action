@@ -1,0 +1,44 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure node version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Build with ncc
+        run: |
+          mv dist/index.js dist/index.js.orig
+          npm run build
+          ORIGINAL_BUILD_CHECKSUM="$(cat dist/index.js.orig | md5sum)"
+          NEW_BUILD_CHECKSUM="$(cat dist/index.js | md5sum)"
+          if [ "${ORIGINAL_BUILD_CHECKSUM}" != "${NEW_BUILD_CHECKSUM}" ]; then
+            echo "Warning: ncc build doesn't match what's checked into dist/index.js."
+            echo "Did you forget to 'npm run build' on this branch?"
+            exit 1
+          fi
+
+      - name: Run unit tests
+        run: npm run test
