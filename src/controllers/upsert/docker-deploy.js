@@ -9,10 +9,8 @@ class DockerDeployStep extends Step {
   }
 
   async checkPrereqs() {
-    this.shouldRun = this.params.useDocker;
-    if (this.shouldRun) {
-      circleci.initializeCredentials();
-    }
+    this.shouldRun = true;
+    circleci.initializeCredentials();
   }
 
   async run() {

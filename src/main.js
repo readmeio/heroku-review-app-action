@@ -41,24 +41,9 @@ async function getParams() {
 
   params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  params.useDocker = false;
-  const dockerParam = core.getInput('docker', { required: false });
-  if (dockerParam && dockerParam.length > 0) {
-    if (dockerParam === 'true') {
-      params.useDocker = true;
-    } else if (dockerParam !== 'false') {
-      throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
-    }
-  }
-
   params.herokuRegion = core.getInput('heroku_region', { required: true });
   params.herokuTeam = core.getInput('heroku_team', { required: true });
-
-  if (params.useDocker) {
-    params.nodeEnv = core.getInput('node_env', { required: false });
-  } else {
-    params.herokuStack = core.getInput('heroku_stack', { required: true });
-  }
+  params.nodeEnv = core.getInput('node_env', { required: false });
 
   params.owner = github.context.payload.repository.owner.login;
   params.repo = github.context.payload.repository.name;
@@ -78,7 +63,6 @@ async function main() {
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
-    core.info(`  - Build type: ${params.useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
     core.info(`  - Heroku pipeline: ${params.pipelineName}`);
     core.info(`  - Heroku app name: ${params.appName}`);
     core.info('');

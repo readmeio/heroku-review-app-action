@@ -12,24 +12,10 @@ describe('#src/controllers/upsert/docker-deploy', () => {
   setupBeforeAndAfter();
 
   describe('checkPrereqs()', () => {
-    it('should run when explicitly configured for Docker deploys', async () => {
+    it('should initialize CircleCI credentials', async () => {
       circleci.initializeCredentials = jest.fn();
 
-      const step = new DockerDeployStep({ appName: SAMPLE_APP_NAME, useDocker: true });
-      await step.checkPrereqs();
-      expect(step.shouldRun).toBe(true);
-    });
-
-    it('should not run when not configured for Docker deploys', async () => {
-      const step = new DockerDeployStep({ appName: SAMPLE_APP_NAME, useDocker: false });
-      await step.checkPrereqs();
-      expect(step.shouldRun).toBe(false);
-    });
-
-    it('should initialize CircleCI credentials when configured for Docker deploys', async () => {
-      circleci.initializeCredentials = jest.fn();
-
-      const step = new DockerDeployStep({ appName: SAMPLE_APP_NAME, useDocker: true });
+      const step = new DockerDeployStep({ appName: SAMPLE_APP_NAME });
       await step.checkPrereqs();
       expect(circleci.initializeCredentials).toHaveBeenCalledTimes(1);
     });

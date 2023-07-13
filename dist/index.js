@@ -10070,10 +10070,8 @@ class DockerDeployStep extends Step {
   }
 
   async checkPrereqs() {
-    this.shouldRun = this.params.useDocker;
-    if (this.shouldRun) {
-      circleci.initializeCredentials();
-    }
+    this.shouldRun = true;
+    circleci.initializeCredentials();
   }
 
   async run() {
@@ -10094,36 +10092,6 @@ class DockerDeployStep extends Step {
 }
 
 module.exports = DockerDeployStep;
-
-
-/***/ }),
-
-/***/ 4534:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const git = __nccwpck_require__(109);
-const heroku = __nccwpck_require__(7213);
-const Step = __nccwpck_require__(9536);
-
-class HerokuDeployStep extends Step {
-  constructor(params) {
-    super('Deploying the app to Heroku -- this may take a few minutes', params);
-  }
-
-  async checkPrereqs() {
-    this.shouldRun = !this.params.useDocker;
-  }
-
-  async run() {
-    const credentials = heroku.getCredentials();
-    const pushResult = git.push(credentials, this.params.appName, this.params.refName);
-    if (pushResult.status !== 0) {
-      throw new Error(`Ran into errors when deploying Heroku app "${this.params.appName}".`);
-    }
-  }
-}
-
-module.exports = HerokuDeployStep;
 
 
 /***/ }),
@@ -10170,43 +10138,6 @@ module.exports = HerokuLabsStep;
 
 /***/ }),
 
-/***/ 9369:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const heroku = __nccwpck_require__(7213);
-const Step = __nccwpck_require__(9536);
-
-class HerokuStackStep extends Step {
-  constructor(params) {
-    super(`Setting the Heroku stack to ${params.herokuStack}`, params);
-  }
-
-  async checkPrereqs() {
-    if (this.params.useDocker) {
-      this.shouldRun = false;
-      return;
-    }
-
-    const appExists = await heroku.appExists(this.params.appName);
-    if (!appExists) {
-      this.shouldRun = false;
-      return;
-    }
-
-    const app = await heroku.getApp(this.params.appName);
-    this.shouldRun = app.stack.name !== this.params.herokuStack;
-  }
-
-  async run() {
-    return heroku.setAppStack(this.params.appName, this.params.herokuStack);
-  }
-}
-
-module.exports = HerokuStackStep;
-
-
-/***/ }),
-
 /***/ 8415:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -10219,9 +10150,7 @@ const heroku = __nccwpck_require__(7213);
 const ConfigVarsStep = __nccwpck_require__(2752);
 const CreateAppStep = __nccwpck_require__(9725);
 const DockerDeployStep = __nccwpck_require__(8214);
-const HerokuDeployStep = __nccwpck_require__(4534);
 const HerokuLabsStep = __nccwpck_require__(3360);
-const HerokuStackStep = __nccwpck_require__(9369);
 const LogDrainStep = __nccwpck_require__(7527);
 const PipelineCouplingStep = __nccwpck_require__(1626);
 const SetDomainStep = __nccwpck_require__(1383);
@@ -10249,9 +10178,7 @@ async function upsertController(params) {
     new HerokuLabsStep(params),
     new ConfigVarsStep(params),
     new LogDrainStep(params),
-    new HerokuStackStep(params),
-    new HerokuDeployStep(params), // mutually exclusive with DockerDeployStep
-    new DockerDeployStep(params), // mutually exclusive with HerokuDeployStep
+    new DockerDeployStep(params),
     new SetDomainStep(params),
   ];
 
@@ -10675,25 +10602,6 @@ module.exports.coupleAppToPipeline = async function (appId, pipelineId) {
 };
 
 /*
- * Changes the Heroku stack (application execution environments) to the one in
- * the input parameters. Not relevant for Docker image-based deploys; stack will
- * reset to "container" when a Docker image is released to the app.
- */
-module.exports.setAppStack = async function (appName, stack) {
-  const app = await module.exports.getApp(appName);
-  const resp = await herokuFetch(`https://api.heroku.com/apps/${app.id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ build_stack: stack }),
-  });
-
-  const result = await resp.json();
-  delete appCache[appName];
-
-  return result;
-};
-
-/*
  * Enables or disables a given Heroku Labs feature.
  */
 module.exports.setAppFeature = async function (appId, featureName, enabled) {
@@ -10798,24 +10706,9 @@ async function getParams() {
 
   params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
-  params.useDocker = false;
-  const dockerParam = core.getInput('docker', { required: false });
-  if (dockerParam && dockerParam.length > 0) {
-    if (dockerParam === 'true') {
-      params.useDocker = true;
-    } else if (dockerParam !== 'false') {
-      throw new Error(`docker = "${dockerParam}" is not valid (must be "true" or "false")`);
-    }
-  }
-
   params.herokuRegion = core.getInput('heroku_region', { required: true });
   params.herokuTeam = core.getInput('heroku_team', { required: true });
-
-  if (params.useDocker) {
-    params.nodeEnv = core.getInput('node_env', { required: false });
-  } else {
-    params.herokuStack = core.getInput('heroku_stack', { required: true });
-  }
+  params.nodeEnv = core.getInput('node_env', { required: false });
 
   params.owner = github.context.payload.repository.owner.login;
   params.repo = github.context.payload.repository.name;
@@ -10835,7 +10728,6 @@ async function main() {
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
-    core.info(`  - Build type: ${params.useDocker ? 'Docker (via CircleCI)' : 'Heroku'}`);
     core.info(`  - Heroku pipeline: ${params.pipelineName}`);
     core.info(`  - Heroku app name: ${params.appName}`);
     core.info('');
