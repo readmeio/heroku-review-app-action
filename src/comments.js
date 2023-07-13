@@ -1,6 +1,8 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
 
+const { getOctokit } = require('./util');
+
 const owlbert = 'https://user-images.githubusercontent.com/313895/167224035-b34efcd6-854e-4cb4-92bd-10d717d2a6b1.png';
 const sadOwlbert =
   'https://user-images.githubusercontent.com/313895/182944177-50af1d9c-8b6d-47b1-aa84-7b7019637bf9.png';
@@ -10,40 +12,6 @@ function getFormattedDate() {
   const dateString = new Date().toLocaleString('en-US', options);
   // toLocaleString() with those options returns "Wed, May 25" but I'm pedantic
   return dateString.replace(',', '');
-}
-
-/*
- * Generates a stub with empty implementations of the Octokit functions we use
- * here. This is helpful so that we don't have to have a lot of if-else logic
- * throughout this module.
- */
-function getFakeOctokit() {
-  return {
-    rest: {
-      issues: {
-        createComment: () => {},
-        updateComment: () => {},
-        listComments: () => {},
-      },
-    },
-  };
-}
-
-let memoizedOctokit;
-
-/*
- * Returns an instance of Octokit, or a stub if there's no auth token present.
- */
-function getOctokit() {
-  if (!memoizedOctokit) {
-    const token = core.getInput('github_token', { required: false });
-    if (!token) {
-      core.warning('GitHub API token not present, not commenting on this pull request');
-      memoizedOctokit = getFakeOctokit();
-    }
-    memoizedOctokit = github.getOctokit(token);
-  }
-  return memoizedOctokit;
 }
 
 /*

@@ -1,6 +1,6 @@
 const core = require('@actions/core');
 
-const circleci = require('../../circleci');
+const githubActions = require('../../github-actions');
 const Step = require('../step');
 
 class DockerDeployStep extends Step {
@@ -10,22 +10,22 @@ class DockerDeployStep extends Step {
 
   async checkPrereqs() {
     this.shouldRun = true;
-    circleci.initializeCredentials();
   }
 
   async run() {
-    const pipeline = await circleci.startDockerBuild(this.params);
-    const url = `https://app.circleci.com/pipelines/github/${this.params.owner}/${this.params.repo}/${pipeline.number}`;
+    const workflowRun = await githubActions.startDeploy(this.params);
 
-    core.info(`  - Kicked off CircleCI pipeline #${pipeline.number}. Waiting for pipeline to finish;`);
-    core.info('    this may take some time. Watch the build progress here:');
-    core.info(`    ${url}`);
+    core.info(`  - Kicked off GitHub workflow run #${workflowRun.run_number}.`);
+    core.info('    This may take some time; watch the build progress here:');
+    core.info(`    ${workflowRun.html_url}`);
 
-    const result = await circleci.waitForPipelineFinish(pipeline.id);
-    if (result.status === 'success') {
+    const result = await githubActions.waitForCompletion(this.params, workflowRun.id);
+    if (result.status === 'completed' && result.conclusion === 'success') {
       core.info('    Build and deploy pipeline finished successfully!');
     } else {
-      throw new Error(`CircleCI pipeline #${pipeline.number} finished with status "${result.status}".`);
+      throw new Error(
+        `GitHub workflow run #${workflowRun.run_number} finished with status "${result.status}" and conclusion "${result.conclusion}".`
+      );
     }
   }
 }

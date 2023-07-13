@@ -9600,143 +9600,13 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 6986:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const core = __nccwpck_require__(2186);
-const fetch = __nccwpck_require__(467);
-
-let CIRCLECI_API_TOKEN;
-
-const BASE_URL = 'https://circleci.com/api/v2';
-const POLLING_SLEEP_MS = process.env.NODE_ENV === 'test' ? 30 : 10 * 1000; // 10 seconds
-const POLLING_TIMEOUT_MS = process.env.NODE_ENV === 'test' ? 300 : 60 * 30 * 1000; // 30 minutes
-
-///
-/// Helper Functions
-///
-
-class HttpResponseError extends Error {
-  constructor(resp) {
-    super(`HTTP Error ${resp.status}`);
-    this.name = 'HttpResponseError';
-    this.status = resp.status;
-  }
-}
-
-/*
- * Helper function to run fetch() on CircleCI; handles authentication, JSON
- * decoding, etc.
- */
-async function circleFetch(path, params) {
-  const url = BASE_URL + path;
-  const givenHeaders = params && params.headers ? params.headers : {};
-  const allParams = {
-    ...params,
-    headers: {
-      ...givenHeaders,
-      'Content-Type': 'application/json',
-      'Circle-Token': CIRCLECI_API_TOKEN,
-    },
-  };
-  const resp = await fetch(url, allParams);
-  if (resp.status >= 400) {
-    throw new HttpResponseError(resp);
-  }
-  return resp.json();
-}
-
-///
-/// CircleCI credentials functions
-///
-
-module.exports.initializeCredentials = function () {
-  CIRCLECI_API_TOKEN = core.getInput('circleci_api_token', { required: false });
-  if (!CIRCLECI_API_TOKEN || CIRCLECI_API_TOKEN.length === 0) {
-    throw new Error('Missing circleci_api_token parameter; this is required for Docker builds');
-  }
-  if (!/^[0-9a-f]{40}/.test(CIRCLECI_API_TOKEN)) {
-    throw new Error('Invalid circleci_api_token value (redacted)');
-  }
-};
-
-///
-/// CircleCI API functions
-///
-
-/*
- * Kicks off a CircleCI pipeline to build this branch's image and release it to
- * a single Heroku app. Returns the CircleCI pipeline response described here:
- * https://circleci.com/docs/api/v2/index.html#operation/triggerPipeline
- */
-module.exports.startDockerBuild = async function (params) {
-  return circleFetch(`/project/gh/${params.owner}/${params.repo}/pipeline`, {
-    method: 'POST',
-    body: JSON.stringify({
-      branch: params.branch,
-      parameters: {
-        RUN_TEST: false,
-        RUN_DOCKER: true,
-        HEROKU_APPS_TO_PUSH: params.appName,
-        HEROKU_APPS_TO_RELEASE: params.appName,
-        ...(params.nodeEnv && { NODE_ENV: params.nodeEnv }),
-      },
-    }),
-  });
-};
-
-/*
- * Queries the CircleCI API and returns the most recent workflow for the given
- * pipeline. Returns undefined if the pipeline has no workflows. The response
- * matches the structure described here:
- * https://circleci.com/docs/api/v2/index.html#operation/listWorkflowsByPipelineId
- */
-async function getPipelineWorkflow(pipelineId) {
-  const resp = await circleFetch(`/pipeline/${pipelineId}/workflow`);
-  if (resp.items.length === 0) {
-    // No workflows have been enqueued for the pipeline (it's probably )
-    // pipeline; we should poll again in a few seconds.
-    return undefined;
-  }
-  if (resp.items.length > 1) {
-    // items.length > 1 means that two or more workflows have been enqueued for
-    // this pipeline. This is unlikely to happen during this GitHub Action but
-    // could happen in situations like re-running the pipeline after an error.
-    // We should make sure that items[0] contains the most recent run.
-    resp.items.sort((a, b) => b.created_at.localeCompare(a.created_at));
-  }
-  return resp.items[0];
-}
-
-/*
- * Polls CircleCI until the pipeline finishes. Times out with an error if the
- * pipeline doesn't finish within 30 minutes (PIPELINE_TIMEOUT_MS). Returns the
- * CircleCI workflows response described here:
- * https://circleci.com/docs/api/v2/index.html#operation/listWorkflowsByPipelineId
- */
-module.exports.waitForPipelineFinish = async function (pipelineId) {
-  const pollUntil = new Date().getTime() + POLLING_TIMEOUT_MS;
-  while (new Date().getTime() < pollUntil) {
-    // On each run of the loop, pause briefly, then check the status of the
-    // pipeline. The loop will exit when the pipeline's workflow is no longer
-    // running, or when we've exceeded our timeout.
-    await new Promise(resolve => setTimeout(resolve, POLLING_SLEEP_MS)); // eslint-disable-line no-await-in-loop, no-promise-executor-return
-    const workflow = await getPipelineWorkflow(pipelineId); // eslint-disable-line no-await-in-loop
-    if (workflow && workflow.status !== 'running') {
-      return workflow;
-    }
-  }
-  throw new Error('Timed out waiting for CircleCI pipeline to finish.');
-};
-
-
-/***/ }),
-
 /***/ 4975:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186);
 const github = __nccwpck_require__(5438);
+
+const { getOctokit } = __nccwpck_require__(6254);
 
 const owlbert = 'https://user-images.githubusercontent.com/313895/167224035-b34efcd6-854e-4cb4-92bd-10d717d2a6b1.png';
 const sadOwlbert =
@@ -9747,40 +9617,6 @@ function getFormattedDate() {
   const dateString = new Date().toLocaleString('en-US', options);
   // toLocaleString() with those options returns "Wed, May 25" but I'm pedantic
   return dateString.replace(',', '');
-}
-
-/*
- * Generates a stub with empty implementations of the Octokit functions we use
- * here. This is helpful so that we don't have to have a lot of if-else logic
- * throughout this module.
- */
-function getFakeOctokit() {
-  return {
-    rest: {
-      issues: {
-        createComment: () => {},
-        updateComment: () => {},
-        listComments: () => {},
-      },
-    },
-  };
-}
-
-let memoizedOctokit;
-
-/*
- * Returns an instance of Octokit, or a stub if there's no auth token present.
- */
-function getOctokit() {
-  if (!memoizedOctokit) {
-    const token = core.getInput('github_token', { required: false });
-    if (!token) {
-      core.warning('GitHub API token not present, not commenting on this pull request');
-      memoizedOctokit = getFakeOctokit();
-    }
-    memoizedOctokit = github.getOctokit(token);
-  }
-  return memoizedOctokit;
 }
 
 /*
@@ -10061,7 +9897,7 @@ module.exports = CreateAppStep;
 
 const core = __nccwpck_require__(2186);
 
-const circleci = __nccwpck_require__(6986);
+const githubActions = __nccwpck_require__(2392);
 const Step = __nccwpck_require__(9536);
 
 class DockerDeployStep extends Step {
@@ -10071,22 +9907,22 @@ class DockerDeployStep extends Step {
 
   async checkPrereqs() {
     this.shouldRun = true;
-    circleci.initializeCredentials();
   }
 
   async run() {
-    const pipeline = await circleci.startDockerBuild(this.params);
-    const url = `https://app.circleci.com/pipelines/github/${this.params.owner}/${this.params.repo}/${pipeline.number}`;
+    const workflowRun = await githubActions.startDeploy(this.params);
 
-    core.info(`  - Kicked off CircleCI pipeline #${pipeline.number}. Waiting for pipeline to finish;`);
-    core.info('    this may take some time. Watch the build progress here:');
-    core.info(`    ${url}`);
+    core.info(`  - Kicked off GitHub workflow run #${workflowRun.run_number}.`);
+    core.info('    This may take some time; watch the build progress here:');
+    core.info(`    ${workflowRun.html_url}`);
 
-    const result = await circleci.waitForPipelineFinish(pipeline.id);
-    if (result.status === 'success') {
+    const result = await githubActions.waitForCompletion(this.params, workflowRun.id);
+    if (result.status === 'completed' && result.conclusion === 'success') {
       core.info('    Build and deploy pipeline finished successfully!');
     } else {
-      throw new Error(`CircleCI pipeline #${pipeline.number} finished with status "${result.status}".`);
+      throw new Error(
+        `GitHub workflow run #${workflowRun.run_number} finished with status "${result.status}" and conclusion "${result.conclusion}".`
+      );
     }
   }
 }
@@ -10389,6 +10225,134 @@ module.exports.push = (credentials, appName, ref) => {
   url.username = credentials.email;
   url.password = credentials.apiKey;
   return git('push', ['--force', url.href, `${ref}:refs/heads/master`]);
+};
+
+
+/***/ }),
+
+/***/ 2392:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const core = __nccwpck_require__(2186);
+
+const { getOctokit } = __nccwpck_require__(6254);
+
+const WORKFLOW_NAME = 'Deploy';
+
+const START_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 30 : 1 * 1000; // 1 second
+const START_TIMEOUT_MS = process.env.NODE_ENV === 'test' ? 300 : 60 * 1000; // 1 minute
+
+const FINISH_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 30 : 10 * 1000; // 10 seconds
+const FINISH_TIMEOUT_MS = process.env.NODE_ENV === 'test' ? 300 : 60 * 30 * 1000; // 30 minutes
+
+function checkResp(resp) {
+  if (resp.status < 200 || resp.status >= 400) {
+    core.error(resp);
+    throw new Error(`GitHub API call returned HTTP status code ${resp.status}`);
+  }
+}
+
+/**
+ * Local helper function to return the numeric ID matching the workflow with
+ * the given name. Memoizes API responses in the workflowIds map defined above.
+ */
+async function getWorkflowId(params, workflowName) {
+  const octokit = getOctokit();
+  const resp = await octokit.rest.actions.listRepoWorkflows({ owner: params.owner, repo: params.repo });
+  checkResp(resp);
+  const candidates = resp.data.workflows.filter(w => w.name === workflowName);
+  if (candidates.length === 0) {
+    throw new Error(`Cannot find workflow named "${workflowName}" in GitHub repo ${params.owner}/${params.repo}`);
+  }
+  return candidates[0].id;
+}
+
+/*
+ * Kicks off a GitHub workflow run to build this branch's image and release it
+ * to a single Heroku app. Returns the GitHub API response described here:
+ * https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
+ */
+module.exports.startDeploy = async function (params) {
+  const startDate = new Date();
+  const workflowId = await getWorkflowId(params, WORKFLOW_NAME);
+
+  const octokit = getOctokit();
+  const resp = await octokit.rest.actions.createWorkflowDispatch({
+    owner: params.owner,
+    repo: params.repo,
+    workflow_id: workflowId,
+    ref: params.branch,
+    inputs: {
+      heroku_apps_to_push: params.appName,
+      heroku_apps_to_release: params.appName,
+      node_env: params.nodeEnv,
+    },
+  });
+  checkResp(resp);
+
+  const pollUntil = new Date().getTime() + START_TIMEOUT_MS;
+  while (new Date().getTime() < pollUntil) {
+    // On each run of the loop, pause briefly, then check to see if a workflow
+    // run has been started. The loop will exit when a matching run is found, or
+    // when we've exceeded our timeout.
+    // eslint-disable-next-line no-promise-executor-return, no-await-in-loop
+    await new Promise(resolve => setTimeout(resolve, START_INTERVAL_MS));
+
+    // eslint-disable-next-line no-await-in-loop
+    const runs = await octokit.rest.actions.listWorkflowRuns({
+      owner: params.owner,
+      repo: params.repo,
+      workflow_id: workflowId,
+      branch: params.branch,
+      head_sha: params.sha,
+    });
+    checkResp(runs);
+
+    if (runs.data && runs.data.workflow_runs && runs.data.workflow_runs.length > 0) {
+      // listWorkflowRuns() only returns one page of runs but it's sorted by
+      // created_at. We can return the first element in the array since it's always
+      // the most recent run with the given filters.
+      const candidates = runs.data.workflow_runs.filter(run => new Date(run.created_at) >= startDate);
+      if (candidates.length > 0) {
+        return candidates[0];
+      }
+    }
+  }
+
+  throw new Error('Timed out waiting for GitHub workflow run to start.');
+};
+
+/*
+ * Polls GitHub Actions API until the workflow run finishes. Times out with an
+ * error if the pipeline doesn't finish within 30 minutes (FINISH_TIMEOUT_MS).
+ * Returns the GitHub API response described here:
+ * https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
+ */
+module.exports.waitForCompletion = async function (params, runId) {
+  const octokit = getOctokit();
+
+  const pollUntil = new Date().getTime() + FINISH_TIMEOUT_MS;
+  while (new Date().getTime() < pollUntil) {
+    // On each run of the loop, pause briefly, then check the status of the
+    // pipeline. The loop will exit when the pipeline's workflow is no longer
+    // running, or when we've exceeded our timeout.
+    // eslint-disable-next-line no-promise-executor-return, no-await-in-loop
+    await new Promise(resolve => setTimeout(resolve, FINISH_INTERVAL_MS));
+
+    // eslint-disable-next-line no-await-in-loop
+    const resp = await octokit.rest.actions.getWorkflowRun({
+      owner: params.owner,
+      repo: params.repo,
+      run_id: runId,
+    });
+    checkResp(resp);
+
+    if (resp.data.status === 'completed') {
+      return resp.data;
+    }
+  }
+
+  throw new Error('Timed out waiting for GitHub workflow run to finish.');
 };
 
 
@@ -10713,6 +10677,7 @@ async function getParams() {
   params.owner = github.context.payload.repository.owner.login;
   params.repo = github.context.payload.repository.name;
   params.branch = github.context.payload.pull_request.head.ref;
+  params.sha = github.context.payload.pull_request.head.sha;
 
   return params;
 }
@@ -10757,6 +10722,30 @@ async function main() {
 }
 
 module.exports = main;
+
+
+/***/ }),
+
+/***/ 6254:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const core = __nccwpck_require__(2186);
+const github = __nccwpck_require__(5438);
+
+const FAKE_GITHUB_TOKEN = 'ghp_thisisafaketokenwhichdoesnotwork';
+
+let memoizedOctokit;
+
+/*
+ * Returns an instance of Octokit, or a stub if there's no auth token present.
+ */
+module.exports.getOctokit = () => {
+  if (!memoizedOctokit) {
+    const token = process.env.JEST_WORKER_ID ? FAKE_GITHUB_TOKEN : core.getInput('github_token', { required: true });
+    memoizedOctokit = github.getOctokit(token);
+  }
+  return memoizedOctokit;
+};
 
 
 /***/ }),

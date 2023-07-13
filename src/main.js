@@ -48,6 +48,7 @@ async function getParams() {
   params.owner = github.context.payload.repository.owner.login;
   params.repo = github.context.payload.repository.name;
   params.branch = github.context.payload.pull_request.head.ref;
+  params.sha = github.context.payload.pull_request.head.sha;
 
   return params;
 }
