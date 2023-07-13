@@ -163,7 +163,6 @@ module.exports.createApp = async function (params) {
     body: JSON.stringify({
       name: params.appName,
       region: params.herokuRegion,
-      stack: params.herokuStack,
       team: params.herokuTeam,
     }),
   });
