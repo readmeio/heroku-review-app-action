@@ -7,9 +7,7 @@ const heroku = require('../../heroku');
 const ConfigVarsStep = require('./config-vars');
 const CreateAppStep = require('./create-app');
 const DockerDeployStep = require('./docker-deploy');
-const HerokuDeployStep = require('./heroku-deploy');
 const HerokuLabsStep = require('./heroku-labs');
-const HerokuStackStep = require('./heroku-stack');
 const LogDrainStep = require('./log-drain');
 const PipelineCouplingStep = require('./pipeline-coupling');
 const SetDomainStep = require('./set-domain');
@@ -37,9 +35,7 @@ async function upsertController(params) {
     new HerokuLabsStep(params),
     new ConfigVarsStep(params),
     new LogDrainStep(params),
-    new HerokuStackStep(params),
-    new HerokuDeployStep(params), // mutually exclusive with DockerDeployStep
-    new DockerDeployStep(params), // mutually exclusive with HerokuDeployStep
+    new DockerDeployStep(params),
     new SetDomainStep(params),
   ];
 

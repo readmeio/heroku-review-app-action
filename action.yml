@@ -19,19 +19,9 @@ inputs:
   heroku_region:
     description: 'Region to deploy newly-created apps'
     default: us
-  heroku_stack:
-    description: 'Name or identifier of Heroku stack to deploy on.'
-    # heroku-20 is the stack used by readmeio, so it's safe for us to use internally
-    default: heroku-20
   heroku_team:
     description: 'Name of the team that will own the new Heroku app.'
     default: readme
-  docker:
-    description: "If \"true\", this will build a Docker image on CircleCI and ship it to Heroku, instead of building directly on Heroku."
-    default: "false"
-  circleci_api_token:
-    description: "CircleCI API credentials to invoke a new pipeline and check its status. Required if docker is true."
-    required: false
   node_env:
     description: 'NODE_ENV value to pass to CircleCI build pipeline'
     required: false

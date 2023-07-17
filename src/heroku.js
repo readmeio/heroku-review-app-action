@@ -163,7 +163,6 @@ module.exports.createApp = async function (params) {
     body: JSON.stringify({
       name: params.appName,
       region: params.herokuRegion,
-      stack: params.herokuStack,
       team: params.herokuTeam,
     }),
   });
@@ -200,25 +199,6 @@ module.exports.coupleAppToPipeline = async function (appId, pipelineId) {
     body: JSON.stringify({ app: appId, pipeline: pipelineId, stage: 'development' }),
   });
   return resp.json();
-};
-
-/*
- * Changes the Heroku stack (application execution environments) to the one in
- * the input parameters. Not relevant for Docker image-based deploys; stack will
- * reset to "container" when a Docker image is released to the app.
- */
-module.exports.setAppStack = async function (appName, stack) {
-  const app = await module.exports.getApp(appName);
-  const resp = await herokuFetch(`https://api.heroku.com/apps/${app.id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ build_stack: stack }),
-  });
-
-  const result = await resp.json();
-  delete appCache[appName];
-
-  return result;
 };
 
 /*
