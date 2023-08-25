@@ -9974,6 +9974,48 @@ module.exports = HerokuLabsStep;
 
 /***/ }),
 
+/***/ 9940:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const core = __nccwpck_require__(2186);
+
+const heroku = __nccwpck_require__(7213);
+const Step = __nccwpck_require__(9536);
+
+const DEFAULT_DYNO_SIZE = 'standard-1x';
+
+class HerokuSizeStep extends Step {
+  constructor(params) {
+    super('Setting Heroku dyno size', params);
+  }
+
+  async checkPrereqs() {
+    this.currentSize = 'unknown';
+    if (await heroku.appExists(this.params.appName)) {
+      try {
+        this.currentSize = await heroku.getAppSize(this.params.appName);
+      } catch (err) {
+        // This will encounter an error if the app exists but has never been
+        // deployed. This isn't a problem -- in that case this.currentSize will
+        // be set to 'unknown' which is safe, it will force the step to run.
+      }
+    } else {
+      this.currentSize = DEFAULT_DYNO_SIZE;
+    }
+    this.shouldRun = this.params.herokuSize.toLowerCase() !== this.currentSize.toLowerCase();
+  }
+
+  async run() {
+    core.info(`  - Changing dyno size from ${this.currentSize} to ${this.params.herokuSize}`);
+    return heroku.setAppSize(this.params);
+  }
+}
+
+module.exports = HerokuSizeStep;
+
+
+/***/ }),
+
 /***/ 8415:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -9987,6 +10029,7 @@ const ConfigVarsStep = __nccwpck_require__(2752);
 const CreateAppStep = __nccwpck_require__(9725);
 const DockerDeployStep = __nccwpck_require__(8214);
 const HerokuLabsStep = __nccwpck_require__(3360);
+const HerokuSizeStep = __nccwpck_require__(9940);
 const LogDrainStep = __nccwpck_require__(7527);
 const PipelineCouplingStep = __nccwpck_require__(1626);
 const SetDomainStep = __nccwpck_require__(1383);
@@ -10015,6 +10058,7 @@ async function upsertController(params) {
     new ConfigVarsStep(params),
     new LogDrainStep(params),
     new DockerDeployStep(params),
+    new HerokuSizeStep(params),
     new SetDomainStep(params),
   ];
 
@@ -10455,6 +10499,12 @@ module.exports.getAppFeature = async function (appId, featureName) {
   return herokuGet(`https://api.heroku.com/apps/${appId}/features/${featureName}`);
 };
 
+/* Loads the dyno size used for the given app */
+module.exports.getAppSize = async function (appName) {
+  const resp = await herokuGet(`https://api.heroku.com/apps/${appName}/formation/web`);
+  return resp.size;
+};
+
 /* Loads the UUID of the named pipeline from Heroku. */
 module.exports.getPipelineId = async function (pipelineName) {
   try {
@@ -10534,6 +10584,19 @@ module.exports.createApp = async function (params) {
   delete appCache[params.appName];
   delete appExistsCache[params.appName];
   return result;
+};
+
+/* Updates the app's "web" formation to set a specific instance size. */
+module.exports.setAppSize = async function (params) {
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${params.appName}/formation/web`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      quantity: 1,
+      size: params.herokuSize,
+    }),
+  });
+  return resp.json();
 };
 
 /* Deletes a Heroku app with the given name. */
@@ -10670,6 +10733,7 @@ async function getParams() {
   params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
   params.herokuRegion = core.getInput('heroku_region', { required: true });
+  params.herokuSize = core.getInput('heroku_size', { required: true });
   params.herokuTeam = core.getInput('heroku_team', { required: true });
   params.nodeEnv = core.getInput('node_env', { required: false });
 
@@ -10692,8 +10756,13 @@ async function main() {
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
-    core.info(`  - Heroku pipeline: ${params.pipelineName}`);
-    core.info(`  - Heroku app name: ${params.appName}`);
+    core.info(`  - Heroku team name: ${params.herokuTeam}`);
+    core.info(`  - App name: ${params.appName}`);
+    core.info(`  - Pipeline: ${params.pipelineName}`);
+    core.info(`  - Region: ${params.herokuRegion}`);
+    core.info(`  - Dyno size: ${params.herokuSize}`);
+    core.info(`  - Log drain URL: ${params.logDrainUrl || 'none'}`);
+    core.info(`  - NODE_ENV: ${params.nodeEnv}`);
     core.info('');
 
     try {

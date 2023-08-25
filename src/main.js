@@ -42,6 +42,7 @@ async function getParams() {
   params.refName = `refs/remotes/pull/${prNumber}/merge`;
 
   params.herokuRegion = core.getInput('heroku_region', { required: true });
+  params.herokuSize = core.getInput('heroku_size', { required: true });
   params.herokuTeam = core.getInput('heroku_team', { required: true });
   params.nodeEnv = core.getInput('node_env', { required: false });
 
@@ -64,8 +65,13 @@ async function main() {
 
     core.info('Heroku Review App Action invoked with these parameters:');
     core.info(`  - Action: ${github.context.payload.action}`);
-    core.info(`  - Heroku pipeline: ${params.pipelineName}`);
-    core.info(`  - Heroku app name: ${params.appName}`);
+    core.info(`  - Heroku team name: ${params.herokuTeam}`);
+    core.info(`  - App name: ${params.appName}`);
+    core.info(`  - Pipeline: ${params.pipelineName}`);
+    core.info(`  - Region: ${params.herokuRegion}`);
+    core.info(`  - Dyno size: ${params.herokuSize}`);
+    core.info(`  - Log drain URL: ${params.logDrainUrl || 'none'}`);
+    core.info(`  - NODE_ENV: ${params.nodeEnv}`);
     core.info('');
 
     try {

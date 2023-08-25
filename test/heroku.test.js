@@ -50,6 +50,20 @@ describe('#src/heroku', () => {
       });
     });
 
+    describe('getAppSize()', () => {
+      it('should return the size of the given app', async () => {
+        nock('https://api.heroku.com')
+          .get(`/apps/${SAMPLE_APP_NAME}/formation/web`)
+          .reply(200, { size: 'performance-l' });
+        await expect(heroku.getAppSize(SAMPLE_APP_NAME)).resolves.toStrictEqual('performance-l');
+      });
+
+      it('should throw an error if the given app or formation does not exist', async () => {
+        nock('https://api.heroku.com').get(`/apps/${SAMPLE_APP_NAME}/formation/web`).reply(404);
+        await expect(heroku.getAppSize(SAMPLE_APP_NAME)).rejects.toThrow(/404/);
+      });
+    });
+
     describe('getAppFeature()', () => {
       it('should return the configuration of the given app', async () => {
         nock('https://api.heroku.com')
@@ -173,6 +187,22 @@ describe('#src/heroku', () => {
       it('should POST to the correct endpoint to create an app', async () => {
         nock('https://api.heroku.com').post('/teams/apps', SAMPLE_POST_FIELDS).reply(200, SAMPLE_RESPONSE);
         await expect(heroku.createApp(SAMPLE_CREATE_PARAMS)).resolves.toStrictEqual(SAMPLE_RESPONSE);
+      });
+    });
+
+    describe('setAppSize()', () => {
+      it('should change the size of the given app', async () => {
+        nock('https://api.heroku.com')
+          .patch(`/apps/${SAMPLE_APP_NAME}/formation/web`, { quantity: 1, size: 'standard-2x' })
+          .reply(200, SAMPLE_RESPONSE);
+        await expect(heroku.setAppSize({ appName: SAMPLE_APP_NAME, herokuSize: 'standard-2x' })).resolves.toStrictEqual(
+          SAMPLE_RESPONSE
+        );
+      });
+
+      it('should throw an error if the given app or formation does not exist', async () => {
+        nock('https://api.heroku.com').patch(`/apps/${SAMPLE_APP_NAME}/formation/web`).reply(404);
+        await expect(heroku.setAppSize({ appName: SAMPLE_APP_NAME, size: 'standard-2x' })).rejects.toThrow(/404/);
       });
     });
 

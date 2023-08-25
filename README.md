@@ -47,6 +47,7 @@ Once that file has been committed to your main branch, this should automatically
 * `docker`: `true` to build a Docker image on CircleCI and ship it to Heroku, `false` to build directly on Heroku.
 * `pipeline_name`: Name of the Heroku pipeline which contains review apps for this repo. Must already exist in Heroku. Required.
 * `log_drain_url`: If specified, this log drain will be added to review apps when they are created. If you want to include the PR number in the URL, you can use `${{github.event.number}}`. Optional.
+* `heroku_size`: If specified, allows you to customize the size of the dyno used for the web server. Optional; defaults to Heroku's default size, `standard-1x`.
 
 ## Caveats
 

@@ -8,6 +8,7 @@ const ConfigVarsStep = require('./config-vars');
 const CreateAppStep = require('./create-app');
 const DockerDeployStep = require('./docker-deploy');
 const HerokuLabsStep = require('./heroku-labs');
+const HerokuSizeStep = require('./heroku-size');
 const LogDrainStep = require('./log-drain');
 const PipelineCouplingStep = require('./pipeline-coupling');
 const SetDomainStep = require('./set-domain');
@@ -36,6 +37,7 @@ async function upsertController(params) {
     new ConfigVarsStep(params),
     new LogDrainStep(params),
     new DockerDeployStep(params),
+    new HerokuSizeStep(params),
     new SetDomainStep(params),
   ];
 

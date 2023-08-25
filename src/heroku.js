@@ -92,6 +92,12 @@ module.exports.getAppFeature = async function (appId, featureName) {
   return herokuGet(`https://api.heroku.com/apps/${appId}/features/${featureName}`);
 };
 
+/* Loads the dyno size used for the given app */
+module.exports.getAppSize = async function (appName) {
+  const resp = await herokuGet(`https://api.heroku.com/apps/${appName}/formation/web`);
+  return resp.size;
+};
+
 /* Loads the UUID of the named pipeline from Heroku. */
 module.exports.getPipelineId = async function (pipelineName) {
   try {
@@ -171,6 +177,19 @@ module.exports.createApp = async function (params) {
   delete appCache[params.appName];
   delete appExistsCache[params.appName];
   return result;
+};
+
+/* Updates the app's "web" formation to set a specific instance size. */
+module.exports.setAppSize = async function (params) {
+  const resp = await herokuFetch(`https://api.heroku.com/apps/${params.appName}/formation/web`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      quantity: 1,
+      size: params.herokuSize,
+    }),
+  });
+  return resp.json();
 };
 
 /* Deletes a Heroku app with the given name. */
