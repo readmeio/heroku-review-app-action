@@ -32,7 +32,7 @@
   "devDependencies": {
     "@readme/eslint-config": "^10.6.2",
     "@vercel/ncc": "^0.36.1",
-    "eslint": "^8.46.0",
+    "eslint": "^8.48.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.28.0",
     "husky": "^8.0.3",
