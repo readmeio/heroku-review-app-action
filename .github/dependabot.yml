@@ -12,6 +12,17 @@ updates:
     commit-message:
       prefix: chore(deps)
       prefix-development: chore(deps-dev)
+    groups:
+      minor-production-deps:
+        dependency-type: 'production'
+        update-types:
+          - minor
+          - patch
+      minor-developent-deps:
+        dependency-type: 'development'
+        update-types:
+          - minor
+          - patch
     ignore:
       # node-fetch v3.x is an ECMAscript module which we can't currently use.
       # v2 is still being supported indefinitely.
