@@ -29,3 +29,7 @@ updates:
       - dependency-name: node-fetch
         versions:
           - '>= 3'
+      # @github/actions v6.0.0 dropped support for Node 16.x
+      - dependency-name: @github/actions
+        versions:
+          - '>= 6'
